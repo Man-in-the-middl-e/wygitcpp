@@ -2,7 +2,6 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <fstream>
 
-#include "Common.hpp"
 #include "GitRepository.hpp"
 
 namespace Git {
@@ -20,6 +19,28 @@ void writeDefaultConfiguration(const GitRepository::Fpath& configFilePath)
     else {
         GENERATE_EXCEPTION("Coudn't open {}", configFilePath.string());
     }
+}
+
+std::optional<GitRepository>
+GitRepository::findRootGitRepository(const GitRepository::Fpath& path,
+                                     bool required)
+{
+    auto currentDir = Fs::canonical(path);
+
+    if (auto gitDir = currentDir / ".git"; Fs::exists(gitDir)) {
+        return GitRepository::create(path);
+    }
+
+    auto parentDir = currentDir.parent_path();
+    if (parentDir == currentDir) {
+        if (required) {
+            GENERATE_EXCEPTION("Not a git directory {}", parentDir.string());
+        }
+        else {
+            return {};
+        }
+    }
+    return findRootGitRepository(parentDir, required);
 }
 
 GitRepository GitRepository::create(const Fpath& path, bool force)

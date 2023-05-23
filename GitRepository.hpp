@@ -4,7 +4,9 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
+#include <optional>
 #include <string>
+#include <iostream>
 
 #include "utilities/Common.hpp"
 
@@ -20,6 +22,9 @@ class GitRepository {
   public:
     static GitRepository initialize(const Fpath& path);
     static GitRepository create(const Fpath& path, bool force = false);
+    static std::optional<GitRepository>
+    findRootGitRepository(const GitRepository::Fpath& path = ".",
+                          bool required = true);
 
   public:
     template <class... T>
@@ -57,7 +62,6 @@ class GitRepository {
         return repoDir(repo, CreateDir::NO, std::forward<T>(path)...);
     }
 
-    // Same as repoPath but create dir needed
     template <class... T>
     static Fpath repoFile(const GitRepository& repo, CreateDir mkdir,
                           T&&... path)
