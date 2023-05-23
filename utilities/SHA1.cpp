@@ -3,10 +3,12 @@
 #include <boost/uuid/detail/sha1.hpp>
 #include <sstream>
 
+namespace Utilities {
 SHA1::SHA1(const std::string& data)
     : m_hashData(SHA1ToString(generateSHA(data)))
 {
 }
+
 const std::string& SHA1::toString() const { return m_hashData; }
 
 std::string SHA1::generateSHA(const std::string& data) const
@@ -37,3 +39,4 @@ std::string SHA1::SHA1ToString(const std::string& hash) const
     }
     return res;
 }
+};

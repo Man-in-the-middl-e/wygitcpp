@@ -2,6 +2,7 @@
 
 #include <string>
 
+namespace Utilities {
 class SHA1 {
   private:
     static constexpr uint8_t HASH_SIZE_BYTES = 20;
@@ -19,3 +20,6 @@ class SHA1 {
   private:
     std::string m_hashData;
 };
+};
+
+using SHA1 = Utilities::SHA1;

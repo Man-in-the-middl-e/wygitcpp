@@ -11,8 +11,8 @@ if(Boost_FOUND)
     add_subdirectory(fmt)
     set(CMAKE_CXX_FLAGS "--std=c++2a")
 
-    set(Common_Sources common/SHA1.cpp common/Zlib.cpp)
+    set(Common_Sources utilities/Common.cpp utilities/SHA1.cpp utilities/Zlib.cpp)
 
-    add_executable(wyagit main.cpp GitRepository.cpp ${Common_Sources})
+    add_executable(wyagit main.cpp GitRepository.cpp ${Common_Sources}) 
     target_link_libraries(wyagit ${Boost_LIBRARIES} fmt)
 endif()

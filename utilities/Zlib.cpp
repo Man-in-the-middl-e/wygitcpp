@@ -1,4 +1,5 @@
 #include "Zlib.hpp"
+#include "../utilities/Common.hpp"
 
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
@@ -21,6 +22,11 @@ std::string compress(const std::string& data)
     return compressed.str();
 }
 
+void compress(const std::filesystem::path& filePath, const std::string& data)
+{
+    Utilities::writeToFile(filePath, compress(data));
+}
+
 std::string decompress(const std::string& data)
 {
     std::istringstream compressed(data);
@@ -34,27 +40,9 @@ std::string decompress(const std::string& data)
     return origin.str();
 }
 
-std::string compressFile(const std::filesystem::path& filePath)
-{
-    return compress(readFile(filePath));
-}
 std::string decompressFile(const std::filesystem::path& filePath)
 {
-    return decompress(readFile(filePath));
-}
-
-std::string readFile(const std::filesystem::path& filePath)
-{
-    std::ifstream ifs(filePath.string(), std::ios::in | std::ios::binary);
-    std::ostringstream data;
-    data << ifs.rdbuf();
-    return data.str();
-}
-
-void writeToFile(const std::filesystem::path& filePath, const std::string& data)
-{
-    std::ofstream ofs(filePath.string(), std::ios::out | std::ios::binary);
-    ofs.write(data.c_str(), data.size());
+    return decompress(Utilities::readFile(filePath));
 }
 
 }; // namespace Zlib

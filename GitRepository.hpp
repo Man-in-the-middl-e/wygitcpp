@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 
-#include "Common.hpp"
+#include "utilities/Common.hpp"
 
 namespace Git {
 namespace Fs = std::filesystem;
@@ -19,6 +19,7 @@ class GitRepository {
 
   public:
     static GitRepository initialize(const Fpath& path);
+    static GitRepository create(const Fpath& path, bool force = false);
 
   public:
     template <class... T>
@@ -92,9 +93,6 @@ class GitRepository {
   private:
     GitRepository(const Fpath& workTree, const Fpath& gitDir,
                   const boost::property_tree::ptree& config);
-
-  private:
-    static GitRepository create(const Fpath& path, bool force = false);
 
   private:
     Fpath m_workTree;
