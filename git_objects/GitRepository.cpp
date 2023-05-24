@@ -1,8 +1,9 @@
+
+#include "GitRepository.hpp"
+
 #include <assert.h>
 #include <boost/property_tree/ini_parser.hpp>
 #include <fstream>
-
-#include "GitRepository.hpp"
 
 namespace Git {
 void writeDefaultConfiguration(const GitRepository::Fpath& configFilePath)

@@ -1,8 +1,9 @@
 #include "GitObject.hpp"
-#include "../utilities/Zlib.hpp"
 
 #include <fstream>
 #include <memory>
+
+#include "../utilities/Zlib.hpp"
 
 namespace Git {
 
@@ -30,15 +31,12 @@ std::unique_ptr<GitObject> GitObject::create(const std::string& format,
 }
 
 std::unique_ptr<GitObject> GitObject::read(const GitRepository& repo,
-                                           const std::string& sha)
+                                           const GitHash& objectHash)
 {
-    // First 2 char of SHA1 hash is used as directory name
-    // rest as file name
-    auto directoryName = sha.substr(0, 2);
-    auto fileName = sha.substr(2);
-    auto path =
-        GitRepository::repoFile(repo, "objects", directoryName, fileName);
-        
+
+    auto path = GitRepository::repoFile(
+        repo, "objects", objectHash.directoryName(), objectHash.fileName());
+
     auto objectContent = Zlib::decompressFile(path);
     /*
         |object type|| ||size||0|
@@ -51,32 +49,32 @@ std::unique_ptr<GitObject> GitObject::read(const GitRepository& repo,
     auto size = std::stoi(objectContent.substr(formatEnds, sizeEnds));
 
     if (size != objectContent.size() - sizeEnds - 1) {
-        GENERATE_EXCEPTION("Malformed object: {}", sha);
+        GENERATE_EXCEPTION("Malformed object: {}", objectHash.data());
     }
 
     auto objectData = ObjectData(objectContent.substr(sizeEnds + 1));
     if (auto object = create(format, repo, objectData); !object) {
-        GENERATE_EXCEPTION("Unknown type {} for object {}", format, sha);
-    } else {
+        GENERATE_EXCEPTION("Unknown type {} for object {}", format,
+                           objectHash.data());
+    }
+    else {
         return object;
     }
 }
 
-SHA1 GitObject::write(GitObject* gitObject, bool acutallyWrite)
+GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
 {
     auto objectData = gitObject->serialize();
     auto fileContent = gitObject->format() + " " +
                        std::to_string(objectData.data().size()) + '\0' +
                        objectData.data();
 
-    SHA1 fileHash(fileContent);
-    auto repositoryDir = fileHash.toString().substr(0, 2);
-    auto repositoryName = fileHash.toString().substr(2);
+    auto fileHash = SHA1::computeHash(fileContent);
 
     if (acutallyWrite) {
         auto objectFile = GitRepository::repoFile(
             gitObject->repository(), GitRepository::CreateDir::YES, "objects",
-            repositoryDir, repositoryName);
+            fileHash.directoryName(), fileHash.fileName());
         Zlib::compress(objectFile, fileContent);
     }
     return fileHash;

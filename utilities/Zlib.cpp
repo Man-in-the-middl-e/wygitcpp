@@ -1,10 +1,11 @@
 #include "Zlib.hpp"
-#include "../utilities/Common.hpp"
 
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <fstream>
+
+#include "../utilities/Common.hpp"
 
 namespace Zlib {
 namespace bio = boost::iostreams;

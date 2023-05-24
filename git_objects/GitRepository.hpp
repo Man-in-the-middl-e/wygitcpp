@@ -4,11 +4,11 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
-#include <iostream>
 
-#include "utilities/Common.hpp"
+#include "../utilities/Common.hpp"
 
 namespace Git {
 namespace Fs = std::filesystem;
@@ -104,3 +104,5 @@ class GitRepository {
     ConfigurationParser::ptree m_configuration;
 };
 }; // namespace Git
+
+using GitRepository = Git::GitRepository;

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "../GitRepository.hpp"
+#include "../git_objects/GitRepository.hpp"
 #include "../utilities/SHA1.hpp"
 
 namespace Git {
@@ -21,9 +21,9 @@ class GitObject;
 class GitObject {
   public:
     static std::unique_ptr<GitObject> read(const GitRepository& repo,
-                                           const std::string& sha1);
+                                           const GitHash& sha1);
 
-    static SHA1 write(GitObject* gitObject, bool acutallyWrite = true);
+    static GitHash write(GitObject* gitObject, bool acutallyWrite = true);
 
     static std::filesystem::path findObject(const GitRepository& repo,
                                             const std::string& name,

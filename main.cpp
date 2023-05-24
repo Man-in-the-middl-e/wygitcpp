@@ -1,35 +1,35 @@
-#include "GitRepository.hpp"
-#include "objects/GitObject.hpp"
 
 #include <boost/program_options.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 #include <iostream>
 #include <sstream>
 
+#include "git_objects/GitObject.hpp"
+#include "git_objects/GitRepository.hpp"
 #include "utilities/SHA1.hpp"
 #include "utilities/Zlib.hpp"
 
-void catFile(const std::string& objectFormat, const std::string& sha)
+void catFile(const std::string& objectFormat, const GitHash& objectHash)
 {
-    auto repository = Git::GitRepository::findRootGitRepository("gitTest");
+    auto repository = GitRepository::findRootGitRepository(".");
 
     if (repository.has_value()) {
-        auto objectLocation =
-            Git::GitObject::findObject(repository.value(), objectFormat, sha);
+        auto objectLocation = Git::GitObject::findObject(
+            repository.value(), objectHash.data(), objectFormat);
         auto object =
-            Git::GitObject::read(repository.value(), objectLocation.string());
+            Git::GitObject::read(repository.value(), GitHash(objectLocation.string()));
         std::cout << object->serialize().data();
     }
 }
 
-void hashFile(const std::string& path, const std::string& format, bool write) 
+void hashFile(const std::string& path, const std::string& format, bool write)
 {
     auto fileContent = Utilities::readFile(path);
-    auto repository = Git::GitRepository::create(".");
+    auto repository = GitRepository::create(".");
     auto gitObject = Git::GitObject::create(format, repository, fileContent);
 
-    auto objectSha = Git::GitObject::write(gitObject.get(), write);
-    std::cout << "Object ID was created: " << objectSha.toString() << std::endl;
+    auto objectHash = Git::GitObject::write(gitObject.get(), write);
+    std::cout << "Object ID was created: " << objectHash << std::endl;
 }
 
 namespace po = boost::program_options;
@@ -69,13 +69,13 @@ int main(int argc, char* argv[])
         if (vm.count("init")) {
             std::string pathToGitRepository = vm["init"].as<std::string>();
             auto repository =
-                Git::GitRepository::initialize(pathToGitRepository);
+                GitRepository::initialize(pathToGitRepository);
         }
         else if (vm.count("cat-file")) {
             auto catFileArguments =
                 vm["cat-file"].as<std::vector<std::string>>();
             if (catFileArguments.size() == 2) {
-                catFile(catFileArguments[0], catFileArguments[1]);
+                catFile(catFileArguments[0], GitHash(catFileArguments[1]));
             }
         }
         else if (vm.count("hash-file")) {

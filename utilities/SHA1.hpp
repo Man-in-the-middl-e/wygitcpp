@@ -2,24 +2,20 @@
 
 #include <string>
 
+#include "../git_objects/GitHash.hpp"
+
 namespace Utilities {
 class SHA1 {
-  private:
-    static constexpr uint8_t HASH_SIZE_BYTES = 20;
-    static constexpr uint8_t DIGEST_SIZE_WORD = 5;
-
   public:
-    SHA1(const std::string& data);
-    const std::string& toString() const;
+    static GitHash computeHash(const std::string& data);
 
   private:
-    std::string generateSHA(const std::string& data) const;
+    SHA1() = delete;
 
-    std::string SHA1ToString(const std::string& hash) const;
-
-  private:
-    std::string m_hashData;
+    static std::string generateHash(const std::string& data);
+    static std::string makeHashReadable(const std::string& hash);
 };
+
 };
 
 using SHA1 = Utilities::SHA1;
