@@ -35,6 +35,7 @@ class GitObject {
                                              const ObjectData& data);
 
   public:
+    // TODO: avoid unnecessary copies, as object data could be up to few dozens MB
     virtual ObjectData serialize() = 0;
     virtual void deserialize(ObjectData& data) = 0;
     virtual std::string format() const = 0;
