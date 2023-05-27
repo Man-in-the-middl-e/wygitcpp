@@ -20,9 +20,6 @@ class ObjectData {
 class GitObject;
 class GitObject {
   public:
-    static std::unique_ptr<GitObject> read(const GitRepository& repo,
-                                           const GitHash& sha1);
-
     static GitHash write(GitObject* gitObject, bool acutallyWrite = true);
 
     static std::filesystem::path findObject(const GitRepository& repo,
@@ -30,14 +27,10 @@ class GitObject {
                                             const std::string& format,
                                             bool follow = true);
 
-    static std::unique_ptr<GitObject> create(const std::string& format,
-                                             const GitRepository& repo,
-                                             const ObjectData& data);
-
   public:
     // TODO: avoid unnecessary copies, as object data could be up to few dozens MB
     virtual ObjectData serialize() = 0;
-    virtual void deserialize(ObjectData& data) = 0;
+    virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;
 
     GitRepository repository() const;
@@ -60,7 +53,7 @@ class GitCommit : public GitObject {
     GitCommit(const GitRepository& repository, const ObjectData& data);
 
     ObjectData serialize() override;
-    void deserialize(ObjectData& data) override;
+    void deserialize(const ObjectData& data) override;
     std::string format() const override;
 };
 
@@ -69,7 +62,7 @@ class GitTree : public GitObject {
     GitTree(const GitRepository& repository, const ObjectData& data);
 
     ObjectData serialize() override;
-    void deserialize(ObjectData& data) override;
+    void deserialize(const ObjectData& data) override;
     std::string format() const override;
 };
 
@@ -78,7 +71,7 @@ class GitTag : public GitObject {
     GitTag(const GitRepository& repository, const ObjectData& data);
 
     ObjectData serialize() override;
-    void deserialize(ObjectData& data) override;
+    void deserialize(const ObjectData& data) override;
     std::string format() const override;
 };
 
@@ -87,7 +80,7 @@ class GitBlob : public GitObject {
     GitBlob(const GitRepository& repository, const ObjectData& data);
 
     ObjectData serialize() override;
-    void deserialize(ObjectData& data) override;
+    void deserialize(const ObjectData& data) override;
     std::string format() const override;
 };
 

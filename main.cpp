@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "git_objects/GitObject.hpp"
+#include "git_objects/GitObjectsFactory.hpp"
 #include "git_objects/GitRepository.hpp"
 #include "utilities/SHA1.hpp"
 #include "utilities/Zlib.hpp"
@@ -16,8 +17,8 @@ void catFile(const std::string& objectFormat, const GitHash& objectHash)
     if (repository.has_value()) {
         auto objectLocation = Git::GitObject::findObject(
             repository.value(), objectHash.data(), objectFormat);
-        auto object =
-            Git::GitObject::read(repository.value(), GitHash(objectLocation.string()));
+        auto object = GitObjectFactory::read(repository.value(),
+                                             GitHash(objectLocation.string()));
         std::cout << object->serialize().data();
     }
 }
@@ -26,7 +27,7 @@ void hashFile(const std::string& path, const std::string& format, bool write)
 {
     auto fileContent = Utilities::readFile(path);
     auto repository = GitRepository::create(".");
-    auto gitObject = Git::GitObject::create(format, repository, fileContent);
+    auto gitObject = GitObjectFactory::create(format, repository, fileContent);
 
     auto objectHash = Git::GitObject::write(gitObject.get(), write);
     std::cout << "Object ID was created: " << objectHash << std::endl;
@@ -68,8 +69,7 @@ int main(int argc, char* argv[])
     try {
         if (vm.count("init")) {
             std::string pathToGitRepository = vm["init"].as<std::string>();
-            auto repository =
-                GitRepository::initialize(pathToGitRepository);
+            auto repository = GitRepository::initialize(pathToGitRepository);
         }
         else if (vm.count("cat-file")) {
             auto catFileArguments =

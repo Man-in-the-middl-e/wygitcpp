@@ -13,7 +13,8 @@ if(Boost_FOUND)
 
     set(Objects_Sources git_objects/GitObject.cpp 
                         git_objects/GitRepository.cpp 
-                        git_objects/GitHash.cpp)
+                        git_objects/GitHash.cpp
+                        git_objects/GitObjectsFactory.cpp)
 
     set(Common_Sources utilities/Common.cpp
                        utilities/SHA1.cpp
