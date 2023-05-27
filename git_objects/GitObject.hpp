@@ -11,10 +11,19 @@ class ObjectData {
   public:
     ObjectData() = default;
     ObjectData(const std::string& data) : m_data(data) {}
-    const std::string& data() { return m_data; }
+    const std::string& data() const { return m_data; }
 
   private:
     std::string m_data;
+};
+
+struct CommitMessage {
+    std::string objectType;
+    std::string parent;
+    std::string author;
+    std::string commiter;
+    std::string gpgsig;
+    std::string messaage;
 };
 
 class GitObject;
@@ -24,11 +33,12 @@ class GitObject {
 
     static std::filesystem::path findObject(const GitRepository& repo,
                                             const std::string& name,
-                                            const std::string& format,
+                                            const std::string& format = "",
                                             bool follow = true);
 
   public:
-    // TODO: avoid unnecessary copies, as object data could be up to few dozens MB
+    // TODO: avoid unnecessary copies, as object data could be up to few dozens
+    // megabytes
     virtual ObjectData serialize() = 0;
     virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;
@@ -55,6 +65,14 @@ class GitCommit : public GitObject {
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
+
+    const CommitMessage& message() const;
+
+  private:
+    CommitMessage parseCommitMessage(const std::string& data);
+
+  private:
+    CommitMessage m_commitMessage;
 };
 
 class GitTree : public GitObject {
@@ -85,3 +103,9 @@ class GitBlob : public GitObject {
 };
 
 }; // namespace Git
+
+using GitObject = Git::GitObject;
+using GitCommit = Git::GitCommit;
+using GitTree = Git::GitTree;
+using GitTag = Git::GitTag;
+using GitBlob = Git::GitBlob;

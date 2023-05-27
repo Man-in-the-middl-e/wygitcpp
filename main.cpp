@@ -7,8 +7,10 @@
 #include "git_objects/GitObject.hpp"
 #include "git_objects/GitObjectsFactory.hpp"
 #include "git_objects/GitRepository.hpp"
+
 #include "utilities/SHA1.hpp"
 #include "utilities/Zlib.hpp"
+#include <unordered_map>
 
 void catFile(const std::string& objectFormat, const GitHash& objectHash)
 {
@@ -33,6 +35,27 @@ void hashFile(const std::string& path, const std::string& format, bool write)
     std::cout << "Object ID was created: " << objectHash << std::endl;
 }
 
+// TODO: figure out when commit can have multiple parents
+void dispalyLog(GitRepository& repo, const GitHash& hash)
+{
+    auto gitObject = GitObjectFactory::read(repo, hash);
+    GitCommit* commit = dynamic_cast<GitCommit*>(gitObject.get());
+    assert(commit != nullptr);
+
+    auto& commitMessage = commit->message();
+
+    std::cout << "commit: " << hash.data().data() << std::endl;
+    std::cout << "Author: " << commitMessage.author << std::endl;
+    std::cout << "\n\t" << commitMessage.messaage << std::endl;
+
+    if (commitMessage.parent.empty()) {
+        return;
+    }
+    else {
+        dispalyLog(repo, GitHash(commitMessage.parent));
+    }
+}
+
 namespace po = boost::program_options;
 int main(int argc, char* argv[])
 {
@@ -54,6 +77,10 @@ int main(int argc, char* argv[])
         ("hash-file",
             po::value<std::vector<std::string>>()->multitoken()->composing(),
             "Compute object ID and optionally creates a blob from a file"
+        );
+        ("log",
+            po::value<std::string>(),
+            "Display history of a given commit."
         );
     // clang-format on
 
@@ -85,6 +112,12 @@ int main(int argc, char* argv[])
                 // TODO: make wirte opitonal argument
                 hashFile(hashFileArguments[0], hashFileArguments[1], true);
             }
+        }
+        else if (vm.count("log")) {
+            auto commitHash = vm["log"].as<std::string>();
+            auto repo = GitRepository::findRootGitRepository();
+            auto object = GitObject::findObject(repo.value(), commitHash);
+            dispalyLog(repo.value(), GitHash(object));
         }
     }
     catch (std::runtime_error myex) {
