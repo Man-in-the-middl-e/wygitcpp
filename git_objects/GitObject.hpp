@@ -26,6 +26,12 @@ struct CommitMessage {
     std::string messaage;
 };
 
+struct GitTreeLeaf {
+    std::string fileMode;
+    std::filesystem::path filePath;
+    GitHash hash;
+};
+
 class GitObject;
 class GitObject {
   public:
@@ -82,6 +88,14 @@ class GitTree : public GitObject {
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
+
+    const std::vector<GitTreeLeaf> tree() const;
+
+  private:
+    std::vector<GitTreeLeaf> parseGitTree(const std::string& data);
+
+  private:
+    std::vector<GitTreeLeaf> m_tree;
 };
 
 class GitTag : public GitObject {

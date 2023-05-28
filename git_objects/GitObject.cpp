@@ -123,11 +123,53 @@ GitTree::GitTree(const GitRepository& repository, const ObjectData& data)
 {
 }
 
-ObjectData GitTree::serialize() { return {}; }
+ObjectData GitTree::serialize()
+{
+    std::string data;
+    
+    for (const auto& leaf : m_tree) {
+        data += leaf.fileMode;
+        data += ' ';
+        data += leaf.filePath;
+        data += '\0';
+        data += GitHash::encodeStringHash(leaf.hash);
+    }
+    return ObjectData(data);
+}
 
-void GitTree::deserialize(const ObjectData& data) {}
+std::vector<GitTreeLeaf> GitTree::parseGitTree(const std::string& data)
+{
+    std::vector<GitTreeLeaf> tree;
+
+    auto maxPos = data.size();
+    size_t start = 0;
+
+    while (start < maxPos) {
+        auto fileModeEnds = data.find(' ', start);
+        auto fileMode = data.substr(start, fileModeEnds);
+        assert(fileMode.size() == 5 || fileMode.size() == 6);
+
+        auto pathEnds = data.find('\0', fileModeEnds);
+        auto path = data.substr(fileModeEnds + 1, pathEnds);
+
+        auto sha = GitHash::decodeBinaryHash(
+            data.substr(pathEnds + 1, GitHash::BINARY_HASH_SIZE));
+
+        start = GitHash::BINARY_HASH_SIZE + 1;
+        tree.push_back(
+            {.fileMode = fileMode, .filePath = path, .hash = GitHash(sha)});
+    }
+    return tree;
+}
+
+void GitTree::deserialize(const ObjectData& data)
+{
+    m_tree = parseGitTree(data.data());
+}
 
 std::string GitTree::format() const { return "tree"; }
+
+const std::vector<GitTreeLeaf> GitTree::tree() const { return m_tree; }
 
 GitTag::GitTag(const GitRepository& repository, const ObjectData& data)
     : GitObject(repository, data)

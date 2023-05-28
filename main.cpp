@@ -36,7 +36,7 @@ void hashFile(const std::string& path, const std::string& format, bool write)
 }
 
 // TODO: figure out when commit can have multiple parents
-void dispalyLog(GitRepository& repo, const GitHash& hash)
+void dispalyLog(const GitRepository& repo, const GitHash& hash)
 {
     auto gitObject = GitObjectFactory::read(repo, hash);
     GitCommit* commit = dynamic_cast<GitCommit*>(gitObject.get());
@@ -53,6 +53,23 @@ void dispalyLog(GitRepository& repo, const GitHash& hash)
     }
     else {
         dispalyLog(repo, GitHash(commitMessage.parent));
+    }
+}
+
+void listTree(const std::string& objectHash)
+{
+    auto repo = GitRepository::findRootGitRepository().value();
+
+    auto object = GitObject::findObject(repo, objectHash, "tree");
+    auto gitObject = GitObjectFactory::read(repo, GitHash(object));
+    auto tree = dynamic_cast<GitTree*>(gitObject.get());
+    assert(tree != nullptr);
+
+    for (const auto& treeLeaf : tree->tree()) {
+        auto childFormat = GitObjectFactory::read(repo, treeLeaf.hash);
+        std::cout << fmt::format("{0} {1} {2}\t{3}", treeLeaf.fileMode,
+                                 childFormat->format(), treeLeaf.hash.data(),
+                                 treeLeaf.filePath.string());
     }
 }
 
@@ -81,6 +98,10 @@ int main(int argc, char* argv[])
         ("log",
             po::value<std::string>(),
             "Display history of a given commit."
+        );
+        ("ls-tree", 
+            po::value<std::string>(),
+            "Pretty-print a tree object."
         );
     // clang-format on
 
@@ -118,6 +139,10 @@ int main(int argc, char* argv[])
             auto repo = GitRepository::findRootGitRepository();
             auto object = GitObject::findObject(repo.value(), commitHash);
             dispalyLog(repo.value(), GitHash(object));
+        }
+        else if (vm.count("ls-tree")) {
+            auto objectHash = vm["ls-tree"].as<std::string>();
+            listTree(objectHash);
         }
     }
     catch (std::runtime_error myex) {
