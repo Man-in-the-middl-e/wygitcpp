@@ -51,12 +51,15 @@ ObjectData GitCommit::serialize()
         << " " << m_commitMessage.parent << std::endl;
     oss << "author"
         << " " << m_commitMessage.author << std::endl;
-    oss << "commiter"
-        << " " << m_commitMessage.commiter << std::endl;
-    oss << "gpgsig"
-        << " " << m_commitMessage.gpgsig << std::endl;
+    oss << "committer"
+        << " " << m_commitMessage.committer << std::endl;
+
+    if (!m_commitMessage.gpgsig.empty()) {
+        oss << "gpgsig"
+            << " " << m_commitMessage.gpgsig << std::endl;
+    }
     oss << std::endl;
-    oss << m_commitMessage.messaage << std::endl;
+    oss << m_commitMessage.messaage;
 
     return ObjectData(oss.str());
 }
@@ -74,48 +77,44 @@ CommitMessage GitCommit::parseCommitMessage(const std::string& data)
 {
     std::istringstream iss(data);
 
-    std::unordered_map<std::string, std::string> commitMessage;
+    std::unordered_map<std::string, std::string> commitMessage = {
+        {"committer", ""}, {"author", ""},  {"gpgsig", ""},
+        {"parent", ""},    {"message", ""}, {"tree", ""}};
 
-    auto trim = [](const std::string& str) {
-        return str.substr(str.find_first_not_of(" \n"));
-    };
+    size_t start = 0;
+    auto maxSize = data.size();
 
-    for (std::string currentLine; std::getline(iss, currentLine);) {
-        if (!currentLine.empty()) {
-            auto keyEnds = currentLine.find_first_of(' ');
-            if (commitMessage.find("gpgsig") != commitMessage.end()) {
-                commitMessage["gpgsig"] += trim(currentLine);
+    // Parse author, committer, parent, tree
+    while (start < maxSize) {
+        auto keyEnds = data.find(' ', start);
+        auto valueEnds = data.find('\n', keyEnds);
 
-                // PGP ends with:  -----END PGP SIGNATURE-----
-                // if we reach the end of PGP, than break the loop
-                // and parse the message that follows the signature.
-                if (currentLine.find("END") == std::string::npos) {
-                    continue;
-                }
-                else {
-                    break;
-                }
-            }
+        auto key = data.substr(start, keyEnds - start);
+        auto value = data.substr(keyEnds, valueEnds - keyEnds);
 
-            auto key = trim(currentLine.substr(0, keyEnds));
-            auto value = trim(currentLine.substr(keyEnds));
-            commitMessage[key] = value;
+        commitMessage[key] = value;
+        start = valueEnds + 1;
+        if (key == "committer") {
+            break;
         }
     }
-
-    // TODO: probably could be done in one loop
-    for (std::string currentLine; std::getline(iss, currentLine);) {
-        if (!currentLine.empty()) {
-            commitMessage["message"] += currentLine;
-        }
+    // Blank line separates gpgsig from message
+    // if there is no blank line than parse the gpgsig first
+    if (data[start] != '\n') {
+        auto gpgsigEnds = data.find("\n\n");
+        std::string gpgsig = "gpgsig";
+        commitMessage[gpgsig] += data.substr(
+            start + gpgsig.size(), gpgsigEnds - start - gpgsig.size());
+        start = gpgsigEnds + 1;
     }
+    commitMessage["message"] = data.substr(start + 1);
 
-    return {.tree = commitMessage.at("tree"),
-            .parent = commitMessage.at("parent"),
-            .author = commitMessage.at("author"),
-            .commiter = commitMessage.at("commiter"),
-            .gpgsig = commitMessage.at("gpsig"),
-            .messaage = commitMessage.at("message")};
+    return {.tree = commitMessage["tree"],
+            .parent = commitMessage["parent"],
+            .author = commitMessage["author"],
+            .committer = commitMessage["committer"],
+            .gpgsig = commitMessage["gpgsig"],
+            .messaage = commitMessage["message"]};
 }
 
 GitTree::GitTree(const GitRepository& repository, const ObjectData& data)
