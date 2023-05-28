@@ -18,7 +18,7 @@ class ObjectData {
 };
 
 struct CommitMessage {
-    std::string objectType;
+    std::string tree;
     std::string parent;
     std::string author;
     std::string commiter;
@@ -114,6 +114,8 @@ class GitBlob : public GitObject {
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
+
+    const ObjectData& blob() const;
 };
 
 }; // namespace Git

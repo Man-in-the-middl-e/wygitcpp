@@ -46,7 +46,7 @@ ObjectData GitCommit::serialize()
     std::ostringstream oss;
 
     oss << "tree"
-        << " " << m_commitMessage.objectType << std::endl;
+        << " " << m_commitMessage.tree << std::endl;
     oss << "parent"
         << " " << m_commitMessage.parent << std::endl;
     oss << "author"
@@ -110,7 +110,7 @@ CommitMessage GitCommit::parseCommitMessage(const std::string& data)
         }
     }
 
-    return {.objectType = commitMessage.at("tree"),
+    return {.tree = commitMessage.at("tree"),
             .parent = commitMessage.at("parent"),
             .author = commitMessage.at("author"),
             .commiter = commitMessage.at("commiter"),
@@ -126,7 +126,7 @@ GitTree::GitTree(const GitRepository& repository, const ObjectData& data)
 ObjectData GitTree::serialize()
 {
     std::string data;
-    
+
     for (const auto& leaf : m_tree) {
         data += leaf.fileMode;
         data += ' ';
