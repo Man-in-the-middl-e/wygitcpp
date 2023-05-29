@@ -90,7 +90,7 @@ CommitMessage GitCommit::parseCommitMessage(const std::string& data)
         auto valueEnds = data.find('\n', keyEnds);
 
         auto key = data.substr(start, keyEnds - start);
-        auto value = data.substr(keyEnds, valueEnds - keyEnds);
+        auto value = data.substr(keyEnds + 1, valueEnds - keyEnds - 1);
 
         commitMessage[key] = value;
         start = valueEnds + 1;
