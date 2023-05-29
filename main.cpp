@@ -78,7 +78,7 @@ void listTree(const std::string& objectHash)
 
     for (const auto& treeLeaf : tree->tree()) {
         auto childFormat = GitObjectFactory::read(repo, treeLeaf.hash);
-        std::cout << fmt::format("{0} {1} {2}\t{3}", treeLeaf.fileMode,
+        std::cout << fmt::format("{0} {1} {2}\t{3}\n", treeLeaf.fileMode,
                                  childFormat->format(), treeLeaf.hash.data(),
                                  treeLeaf.filePath.string());
     }

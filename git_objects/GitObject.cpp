@@ -145,16 +145,16 @@ std::vector<GitTreeLeaf> GitTree::parseGitTree(const std::string& data)
 
     while (start < maxPos) {
         auto fileModeEnds = data.find(' ', start);
-        auto fileMode = data.substr(start, fileModeEnds);
+        auto fileMode = data.substr(start, fileModeEnds - start);
         assert(fileMode.size() == 5 || fileMode.size() == 6);
 
         auto pathEnds = data.find('\0', fileModeEnds);
-        auto path = data.substr(fileModeEnds + 1, pathEnds);
+        auto path = data.substr(fileModeEnds + 1, pathEnds - fileModeEnds - 1);
 
         auto sha = GitHash::decodeBinaryHash(
             data.substr(pathEnds + 1, GitHash::BINARY_HASH_SIZE));
 
-        start = GitHash::BINARY_HASH_SIZE + 1;
+        start = pathEnds + GitHash::BINARY_HASH_SIZE + 1;
         tree.push_back(
             {.fileMode = fileMode, .filePath = path, .hash = GitHash(sha)});
     }
