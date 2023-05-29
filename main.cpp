@@ -44,8 +44,19 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
 
     auto& commitMessage = commit->message();
 
+    auto authorEnds = commitMessage.author.find_last_of('>');
+    if (authorEnds == std::string::npos) {
+        GENERATE_EXCEPTION("Malformed date in {}, date should consist of time "
+                           "since epoch followed by UTC offset",
+                           commitMessage.author);
+    }
+
+    auto author = commitMessage.author.substr(0, authorEnds + 1);
+    auto date =
+        Utilities::decodeDateIn(commitMessage.author.substr(authorEnds + 2));
     std::cout << "commit: " << hash.data().data() << std::endl;
-    std::cout << "Author: " << commitMessage.author << std::endl;
+    std::cout << "Author: " << author << std::endl;
+    std::cout << "Date:   " << date << std::endl;
     std::cout << "\n\t" << commitMessage.messaage << std::endl;
 
     if (commitMessage.parent.empty()) {
@@ -206,7 +217,8 @@ int main(int argc, char* argv[])
                 vm["checkout"].as<std::vector<std::string>>();
             if (checkoutArguments.size() == 2) {
                 auto hash = GitHash(checkoutArguments[0]);
-                auto checkoutDir = std::filesystem::absolute(checkoutArguments[1]);
+                auto checkoutDir =
+                    std::filesystem::absolute(checkoutArguments[1]);
                 checkout(hash, checkoutDir);
             }
         }

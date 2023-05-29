@@ -11,4 +11,6 @@ namespace Utilities {
 std::string readFile(const std::filesystem::path& filePath);
 void writeToFile(const std::filesystem::path& filePath,
                  const std::string& data);
+
+std::string decodeDateIn(const std::string& gitAuthorOrCommiter);
 }; // namespace Utilities
