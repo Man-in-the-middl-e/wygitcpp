@@ -35,6 +35,73 @@ std::filesystem::path GitObject::findObject(const GitRepository& repo,
 {
     return name;
 }
+/*
+    Parse files that conatins key value paris on each line, separated by space,
+    with optional gpgsig, and message that is separated by new line.
+    Example:
+        tree 29ff16c9c14e2652b22f8b78bb08a5a07930c147
+        parent 206941306e8a8af65b66eaaaea388a7ae24d49a0
+        author Thibault Polge <thibault@thb.lt> 1527025023 +0200
+        committer Thibault Polge <thibault@thb.lt> 1527025044 +0200
+        gpgsig -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAABCAAdFiEExwXquOM8bWb4Q2zVGxM2FxoLkGQFAlsEjZQACgkQGxM2FxoL
+        kGQdcBAAqPP+ln4nGDd2gETXjvOpOxLzIMEw4A9gU6CzWzm+oB8mEIKyaH0UFIPh
+        rNUZ1j7/ZGFNeBDtT55LPdPIQw4KKlcf6kC8MPWP3qSu3xHqx12C5zyai2duFZUU
+        wqOt9iCFCscFQYqKs3xsHI+ncQb+PGjVZA8+jPw7nrPIkeSXQV2aZb1E68wa2YIL
+        3eYgTUKz34cB6tAq9YwHnZpyPx8UJCZGkshpJmgtZ3mCbtQaO17LoihnqPn4UOMr
+        V75R/7FjSuPLS8NaZF4wfi52btXMSxO/u7GuoJkzJscP3p4qtwe6Rl9dc1XC8P7k
+        NIbGZ5Yg5cEPcfmhgXFOhQZkD0yxcJqBUcoFpnp2vu5XJl2E5I/quIyVxUXi6O6c
+        /obspcvace4wy8uO0bdVhc4nJ+Rla4InVSJaUaBeiHTW8kReSFYyMmDCzLjGIu1q
+        doU61OM3Zv1ptsLu3gUE6GU27iWYj2RWN3e3HE4Sbd89IFwLXNdSuM0ifDLZk7AQ
+        WBhRhipCCgZhkj9g2NEk7jRVslti1NdN5zoQLaJNqSwO1MtxTmJ15Ksk3QP6kfLB
+        Q52UWybBzpaP9HEd4XnR+HuQ4k2K0ns2KgNImsNvIyFwbpMUyUWLMPimaV1DWUXo
+        5SBjDB/V/W2JBFR+XKHFJeFwYhj7DD/ocsGr4ZMx/lgc8rjIBkI=
+        =lgTX
+        -----END PGP SIGNATURE-----
+
+        Create first draft
+*/
+KeyValuesWithMessage
+GitObject::parseKeyValuesWithMessage(const std::string& data)
+{
+    KeyValuesWithMessage objectData;
+
+    size_t start = 0;
+    auto maxSize = data.size();
+
+    while (start < maxSize) {
+        // message is separated by blank line from all other data.
+        if (data[start] == '\n') {
+            objectData["message"] = data.substr(start + 1);
+            break;
+        }
+
+        auto keyEnds = data.find(' ', start);
+        auto valueEnds = data.find('\n', keyEnds);
+
+        auto key = data.substr(start, keyEnds - start);
+        if (key == "gpgsig") {
+            auto gpgsigEnds = data.find("\n\n");
+            objectData[key] += data.substr(start + key.size(),
+                                           gpgsigEnds - start - key.size());
+            // point to '\n', so the message could be parse properly
+            start = gpgsigEnds + 1;
+            continue;
+        }
+
+        auto value = data.substr(keyEnds + 1, valueEnds - keyEnds - 1);
+        objectData[key] = value;
+        start = valueEnds + 1;
+    }
+    
+    // add empty gpgsig if it is not present, so the 
+    // caller don't need to check if this value is present
+    if (objectData.find("gpgsig") == objectData.end()) {
+        objectData["gpgsig"] = "";
+    }
+    return objectData;
+}
 
 GitCommit::GitCommit(const GitRepository& repository, const ObjectData& data)
     : GitObject(repository, data)
@@ -66,55 +133,20 @@ ObjectData GitCommit::serialize()
 
 void GitCommit::deserialize(const ObjectData& data)
 {
-    m_commitMessage = parseCommitMessage(data.data());
+    auto commitMessage = GitObject::parseKeyValuesWithMessage(data.data());
+    m_commitMessage = {.tree = commitMessage.at("tree"),
+                       .parent = commitMessage.at("parent"),
+                       .author = commitMessage.at("author"),
+                       .committer = commitMessage.at("committer"),
+                       .gpgsig = commitMessage.at("gpgsig"),
+                       .messaage = commitMessage.at("message")};
 }
 
 std::string GitCommit::format() const { return "commit"; }
 
-const CommitMessage& GitCommit::message() const { return m_commitMessage; }
-
-CommitMessage GitCommit::parseCommitMessage(const std::string& data)
+const CommitMessage& GitCommit::commitMessage() const
 {
-    std::istringstream iss(data);
-
-    std::unordered_map<std::string, std::string> commitMessage = {
-        {"committer", ""}, {"author", ""},  {"gpgsig", ""},
-        {"parent", ""},    {"message", ""}, {"tree", ""}};
-
-    size_t start = 0;
-    auto maxSize = data.size();
-
-    // Parse author, committer, parent, tree
-    while (start < maxSize) {
-        auto keyEnds = data.find(' ', start);
-        auto valueEnds = data.find('\n', keyEnds);
-
-        auto key = data.substr(start, keyEnds - start);
-        auto value = data.substr(keyEnds + 1, valueEnds - keyEnds - 1);
-
-        commitMessage[key] = value;
-        start = valueEnds + 1;
-        if (key == "committer") {
-            break;
-        }
-    }
-    // Blank line separates gpgsig from message
-    // if there is no blank line than parse the gpgsig first
-    if (data[start] != '\n') {
-        auto gpgsigEnds = data.find("\n\n");
-        std::string gpgsig = "gpgsig";
-        commitMessage[gpgsig] += data.substr(
-            start + gpgsig.size(), gpgsigEnds - start - gpgsig.size());
-        start = gpgsigEnds + 1;
-    }
-    commitMessage["message"] = data.substr(start + 1);
-
-    return {.tree = commitMessage["tree"],
-            .parent = commitMessage["parent"],
-            .author = commitMessage["author"],
-            .committer = commitMessage["committer"],
-            .gpgsig = commitMessage["gpgsig"],
-            .messaage = commitMessage["message"]};
+    return m_commitMessage;
 }
 
 GitTree::GitTree(const GitRepository& repository, const ObjectData& data)

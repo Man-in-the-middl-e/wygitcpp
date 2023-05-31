@@ -42,7 +42,7 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
     GitCommit* commit = dynamic_cast<GitCommit*>(gitObject.get());
     assert(commit != nullptr);
 
-    auto& commitMessage = commit->message();
+    auto& commitMessage = commit->commitMessage();
 
     auto authorEnds = commitMessage.author.find_last_of('>');
     if (authorEnds == std::string::npos) {
@@ -128,7 +128,7 @@ void checkout(const GitHash& commit,
 
     // TODO: avoid dynamic_cast by impelemnting read<T> function
     if (auto gitCommit = dynamic_cast<GitCommit*>(gitObject.get()); gitCommit) {
-        auto treeHash = GitHash(gitCommit->message().tree);
+        auto treeHash = GitHash(gitCommit->commitMessage().tree);
         auto tree = GitObjectFactory::read(repo, treeHash);
         treeCheckout(tree.get(), repo, checkoutDirectory);
     }
@@ -264,6 +264,5 @@ int main(int argc, char* argv[])
     catch (std::runtime_error myex) {
         std::cout << myex.what() << std::endl;
     }
-
     return 0;
 }
