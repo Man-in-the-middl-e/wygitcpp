@@ -137,6 +137,32 @@ void checkout(const GitHash& commit,
     }
 }
 
+std::string resolveReference(const std::filesystem::path& reference)
+{
+    auto referenceContet = Utilities::readFile(reference);
+    if (referenceContet.starts_with("ref: ")) {
+        return resolveReference(referenceContet.substr(5));
+    }
+    else {
+        referenceContet.erase(referenceContet.end() - 1);
+        return referenceContet;
+    }
+}
+
+std::unordered_map<std::string, std::vector<std::string>>
+showReferences(const std::filesystem::path& refDir)
+{
+    std::unordered_map<std::string, std::vector<std::string>> refs;
+    for (auto const& dir_entry :
+         std::filesystem::recursive_directory_iterator{refDir}) {
+        if (dir_entry.is_regular_file()) {
+            auto hash = resolveReference(dir_entry.path());
+            refs[hash].push_back(dir_entry.path().string());
+        }
+    }
+    return refs;
+}
+
 namespace po = boost::program_options;
 int main(int argc, char* argv[])
 {
@@ -163,13 +189,17 @@ int main(int argc, char* argv[])
             po::value<std::string>(),
             "Display history of a given commit."
         )
-        ("ls-tree", 
+        ("ls-tree",
             po::value<std::string>(),
             "Pretty-print a tree object."
         )
         ("checkout",
             po::value<std::vector<std::string>>()->multitoken()->composing(),
             "Checkout a commit inside of a directory."
+        )
+        ("show-ref",
+            po::value<std::string>()->implicit_value(".git/refs"),
+            "List references."
         );
     // clang-format on
 
@@ -222,9 +252,18 @@ int main(int argc, char* argv[])
                 checkout(hash, checkoutDir);
             }
         }
+        else if (vm.count("show-ref")) {
+            auto path = vm["show-ref"].as<std::string>();
+            for (const auto& [hash, refs] : showReferences(path)) {
+                for (const auto& ref : refs) {
+                    std::cout << hash << '\t' << ref << std::endl;
+                }
+            }
+        }
     }
     catch (std::runtime_error myex) {
         std::cout << myex.what() << std::endl;
     }
+
     return 0;
 }

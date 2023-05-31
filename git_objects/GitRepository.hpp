@@ -38,20 +38,20 @@ class GitRepository {
     static Fpath repoDir(const GitRepository& repo, CreateDir mkdir,
                          T&&... path)
     {
-        auto repositoryPath = repoPath(repo, std::forward<T>(path)...);
-        if (std::filesystem::exists(repositoryPath)) {
-            if (std::filesystem::is_directory(repositoryPath)) {
-                return repositoryPath;
+        auto repositoryDir = repoPath(repo, std::forward<T>(path)...);
+        if (std::filesystem::exists(repositoryDir)) {
+            if (std::filesystem::is_directory(repositoryDir)) {
+                return repositoryDir;
             }
             else {
                 throw std::runtime_error(fmt::format("Not a directory: {}",
-                                                     repositoryPath.string()));
+                                                     repositoryDir.string()));
             }
         }
 
         if (mkdir == CreateDir::YES) {
-            std::filesystem::create_directories(repositoryPath);
-            return repositoryPath;
+            std::filesystem::create_directories(repositoryDir);
+            return repositoryDir;
         }
         return {};
     }
