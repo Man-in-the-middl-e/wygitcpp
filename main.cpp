@@ -57,7 +57,7 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
     std::cout << "commit: " << hash.data().data() << std::endl;
     std::cout << "Author: " << author << std::endl;
     std::cout << "Date:   " << date << std::endl;
-    std::cout << "\n\t" << commitMessage.messaage << std::endl;
+    std::cout << "\n\t" << commitMessage.message << std::endl;
 
     if (commitMessage.parent.empty()) {
         return;
@@ -149,15 +149,15 @@ std::string resolveReference(const std::filesystem::path& reference)
     }
 }
 
-std::unordered_map<std::string, std::vector<std::string>>
+std::unordered_map<std::string, std::vector<std::filesystem::path>>
 showReferences(const std::filesystem::path& refDir)
 {
-    std::unordered_map<std::string, std::vector<std::string>> refs;
+    std::unordered_map<std::string, std::vector<std::filesystem::path>> refs;
     for (auto const& dir_entry :
          std::filesystem::recursive_directory_iterator{refDir}) {
         if (dir_entry.is_regular_file()) {
             auto hash = resolveReference(dir_entry.path());
-            refs[hash].push_back(dir_entry.path().string());
+            refs[hash].push_back(dir_entry.path());
         }
     }
     return refs;
@@ -200,6 +200,11 @@ int main(int argc, char* argv[])
         ("show-ref",
             po::value<std::string>()->implicit_value(".git/refs"),
             "List references."
+        )
+        // TODO: there is no ls-tag, make it part of tag somehow
+        ("ls-tag",
+            po::value<std::string>()->implicit_value(""),
+            "List tags"
         );
     // clang-format on
 
@@ -256,7 +261,18 @@ int main(int argc, char* argv[])
             auto path = vm["show-ref"].as<std::string>();
             for (const auto& [hash, refs] : showReferences(path)) {
                 for (const auto& ref : refs) {
-                    std::cout << hash << '\t' << ref << std::endl;
+                    std::cout << hash << '\t' << ref.string() << std::endl;
+                }
+            }
+        }
+        else if (vm.count("ls-tag")) {
+            auto tagsPath = GitRepository::repoFile(
+                GitRepository::findRootGitRepository().value(), "refs", "tags");
+            if (!tagsPath.empty()) {
+                for (const auto& [_, tags] : showReferences(tagsPath)) {
+                    for (const auto& tag : tags) {
+                        std::cout << tag.filename().string() << std::endl;
+                    }
                 }
             }
         }
