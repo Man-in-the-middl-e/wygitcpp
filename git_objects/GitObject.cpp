@@ -94,8 +94,8 @@ GitObject::parseKeyValuesWithMessage(const std::string& data)
         objectData[key] = value;
         start = valueEnds + 1;
     }
-    
-    // add empty gpgsig if it is not present, so the 
+
+    // add empty gpgsig if it is not present, so the
     // caller don't need to check if this value is present
     if (objectData.find("gpgsig") == objectData.end()) {
         objectData["gpgsig"] = "";
@@ -126,7 +126,7 @@ ObjectData GitCommit::serialize()
             << " " << m_commitMessage.gpgsig << std::endl;
     }
     oss << std::endl;
-    oss << m_commitMessage.messaage;
+    oss << m_commitMessage.message;
 
     return ObjectData(oss.str());
 }
@@ -139,7 +139,7 @@ void GitCommit::deserialize(const ObjectData& data)
                        .author = commitMessage.at("author"),
                        .committer = commitMessage.at("committer"),
                        .gpgsig = commitMessage.at("gpgsig"),
-                       .messaage = commitMessage.at("message")};
+                       .message = commitMessage.at("message")};
 }
 
 std::string GitCommit::format() const { return "commit"; }
@@ -207,9 +207,39 @@ GitTag::GitTag(const GitRepository& repository, const ObjectData& data)
 {
 }
 
-ObjectData GitTag::serialize() { return {}; }
+ObjectData GitTag::serialize()
+{
+    std::ostringstream oss;
 
-void GitTag::deserialize(const ObjectData& data) {}
+    oss << "object"
+        << " " << m_tagMessage.object << std::endl;
+    oss << "type"
+        << " " << m_tagMessage.type << std::endl;
+    oss << "tag"
+        << " " << m_tagMessage.tag << std::endl;
+    oss << "tagger"
+        << " " << m_tagMessage.tagger << std::endl;
+
+    if (!m_tagMessage.gpgsig.empty()) {
+        oss << "gpgsig"
+            << " " << m_tagMessage.gpgsig << std::endl;
+    }
+    oss << std::endl;
+    oss << m_tagMessage.message;
+
+    return ObjectData(oss.str());
+}
+
+void GitTag::deserialize(const ObjectData& data)
+{
+    auto tagMessage = GitObject::parseKeyValuesWithMessage(data.data());
+    m_tagMessage = {.object = tagMessage.at("object"),
+                    .type = tagMessage.at("type"),
+                    .tag = tagMessage.at("tag"),
+                    .tagger = tagMessage.at("tagger"),
+                    .gpgsig = tagMessage.at("gpgsig"),
+                    .message = tagMessage.at("message")};
+}
 
 std::string GitTag::format() const { return "tag"; }
 

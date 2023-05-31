@@ -24,7 +24,16 @@ struct CommitMessage {
     std::string author;
     std::string committer;
     std::string gpgsig;
-    std::string messaage;
+    std::string message;
+};
+
+struct TagMessage {
+    std::string object;
+    std::string type;
+    std::string tag;
+    std::string tagger;
+    std::string gpgsig;
+    std::string message;
 };
 
 using KeyValuesWithMessage = std::unordered_map<std::string, std::string>;
@@ -50,6 +59,7 @@ class GitObject {
   public:
     // TODO: avoid unnecessary copies, as object data could be up to few dozens
     // megabytes
+    // TODO: add new way of construction objcest, mb don't use ObjectData at all
     virtual ObjectData serialize() = 0;
     virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;
@@ -71,6 +81,8 @@ class GitObject {
 
 class GitCommit : public GitObject {
   public:
+    // TODO: make constructors private, the only proper way to create objects is
+    // through factory
     GitCommit(const GitRepository& repository, const ObjectData& data);
 
     ObjectData serialize() override;
@@ -107,6 +119,9 @@ class GitTag : public GitObject {
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
+
+  private:
+    TagMessage m_tagMessage;
 };
 
 class GitBlob : public GitObject {
@@ -127,3 +142,4 @@ using GitCommit = Git::GitCommit;
 using GitTree = Git::GitTree;
 using GitTag = Git::GitTag;
 using GitBlob = Git::GitBlob;
+using ObjectData = Git::ObjectData;
