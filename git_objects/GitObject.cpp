@@ -56,7 +56,8 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
                     GitHash(GitObject::resolveReference(branchesPath / name)));
             }
         }
-        auto tagsPath = GitRepository::repoPath(repo, "tags");
+
+        auto tagsPath = GitRepository::repoPath(repo, "refs", "tags");
         if (candiates.empty()) {
             for (std::filesystem::directory_entry dirEntry :
                  std::filesystem::directory_iterator{tagsPath}) {

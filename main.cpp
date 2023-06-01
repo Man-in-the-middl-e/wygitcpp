@@ -234,6 +234,10 @@ int main(int argc, char* argv[])
         ("tag",
             po::value<std::vector<std::string>>()->multitoken()->composing(),
             "Create tag, use -a to create a tag object"
+        )
+        ("rev-parse",
+            po::value<std::vector<std::string>>()->multitoken()->composing(),
+            "Parse revision (or other objects )identifiers"
         );
     // clang-format on
 
@@ -313,6 +317,15 @@ int main(int argc, char* argv[])
                 bool createAssociativeTag =
                     tagAruments.size() == 3 && tagAruments[2] == "a";
                 createTag(tagName, objectHash, createAssociativeTag);
+            }
+        }
+        else if (vm.count("rev-parse")) {
+            auto revParseArgs = vm["rev-parse"].as<std::vector<std::string>>();
+            if (revParseArgs.size() >= 1) {
+                auto objectName = revParseArgs[0];
+                auto fmt = revParseArgs.size() > 1 ? revParseArgs[1] : "";
+                auto repo = GitRepository::findRootGitRepository().value();
+                std::cout << GitObject::findObject(repo, objectName, fmt) << std::endl;
             }
         }
     }
