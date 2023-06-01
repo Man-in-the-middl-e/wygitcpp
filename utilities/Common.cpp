@@ -7,6 +7,9 @@ namespace Utilities {
 std::string readFile(const std::filesystem::path& filePath)
 {
     std::ifstream ifs(filePath.string(), std::ios::in | std::ios::binary);
+    if (!ifs.is_open()) {
+        GENERATE_EXCEPTION("No such file or directory: {}", filePath.string());
+    }
     std::ostringstream data;
     data << ifs.rdbuf();
     return data.str();
