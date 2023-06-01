@@ -49,12 +49,13 @@ class GitObject {
   public:
     static GitHash write(GitObject* gitObject, bool acutallyWrite = true);
 
-    static std::filesystem::path findObject(const GitRepository& repo,
-                                            const std::string& name,
-                                            const std::string& format = "",
-                                            bool follow = true);
+    static GitHash findObject(const GitRepository& repo,
+                              const std::string& name,
+                              const std::string& format = "");
     static KeyValuesWithMessage
     parseKeyValuesWithMessage(const std::string& data);
+
+    static std::string resolveReference(const std::filesystem::path& reference);
 
   public:
     // TODO: avoid unnecessary copies, as object data could be up to few dozens
@@ -119,6 +120,8 @@ class GitTag : public GitObject {
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
+
+    const TagMessage& tagMessage() const;
 
   private:
     TagMessage m_tagMessage;

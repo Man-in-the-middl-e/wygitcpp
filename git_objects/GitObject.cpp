@@ -1,9 +1,75 @@
 #include "GitObject.hpp"
+#include "GitObjectsFactory.hpp"
 
 #include <fstream>
 #include <memory>
+#include <regex>
 
 #include "../utilities/Zlib.hpp"
+
+namespace {
+std::vector<GitHash> resolveObject(const GitRepository& repo,
+                                   const std::string& name)
+{
+    if (name.empty()) {
+        return {};
+    }
+    if (name == "HEAD") {
+        // TODO: smells very badly, way too many conversions
+        return {GitHash(GitObject::resolveReference(GitRepository::repoFile(
+            GitRepository::findRootGitRepository().value(), "HEAD")))};
+    }
+
+    std::regex shaSignature("[0-9A-Fa-f]{4,40}");
+    std::smatch cm;
+
+    std::vector<GitHash> candiates;
+    if (auto matched = std::regex_match(name, cm, shaSignature); matched) {
+        auto sha = cm.str();
+
+        if (sha.size() == 40) {
+            return {GitHash(sha)};
+        }
+
+        auto hashPrefix = name.substr(0, 2);
+        auto objectPath = GitRepository::repoDir(repo, "objects", hashPrefix);
+
+        if (!objectPath.empty()) {
+            auto beginningOfHash = name.substr(2);
+            for (std::filesystem::directory_entry dirEntry :
+                 std::filesystem::directory_iterator{objectPath}) {
+                auto hashSuffix = dirEntry.path().filename().string();
+                if (dirEntry.is_regular_file() &&
+                    hashSuffix.starts_with(beginningOfHash)) {
+                    candiates.push_back(GitHash(hashPrefix + hashSuffix));
+                }
+            }
+        }
+    }
+    else {
+        // if name is not hash, than it's tag or branch
+        auto branchesPath = GitRepository::repoPath(repo, "branches");
+        for (std::filesystem::directory_entry dirEntry :
+             std::filesystem::directory_iterator{branchesPath}) {
+            if (dirEntry.path().filename().string() == name) {
+                candiates.push_back(
+                    GitHash(GitObject::resolveReference(branchesPath / name)));
+            }
+        }
+        auto tagsPath = GitRepository::repoPath(repo, "tags");
+        if (candiates.empty()) {
+            for (std::filesystem::directory_entry dirEntry :
+                 std::filesystem::directory_iterator{tagsPath}) {
+                if (dirEntry.path().filename().string() == name) {
+                    candiates.push_back(
+                        GitHash(GitObject::resolveReference(tagsPath / name)));
+                }
+            }
+        }
+    }
+    return candiates;
+}
+}; // namespace
 
 namespace Git {
 
@@ -29,11 +95,41 @@ GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
     return fileHash;
 }
 
-std::filesystem::path GitObject::findObject(const GitRepository& repo,
-                                            const std::string& name,
-                                            const std::string& fmt, bool follow)
+GitHash GitObject::findObject(const GitRepository& repo,
+                              const std::string& name, const std::string& fmt)
 {
-    return name;
+    auto shas = resolveObject(repo, name);
+    if (shas.empty()) {
+        GENERATE_EXCEPTION("No such reference: {}", name);
+    }
+
+    if (shas.size() > 1) {
+        GENERATE_EXCEPTION("Ambiguous reference for {0}:", name);
+    }
+
+    auto sha = shas[0];
+
+    if (fmt.empty()) {
+        return sha;
+    }
+
+    while (true) {
+        auto object = GitObjectFactory::read(repo, sha);
+
+        if (object->format() == fmt) {
+            return sha;
+        }
+
+        if (auto tag = dynamic_cast<GitTag*>(object.get()); tag) {
+            sha = GitHash(tag->tagMessage().object);
+        }
+        else if (auto commit = dynamic_cast<GitCommit*>(object.get()); commit) {
+            sha = GitHash(commit->commitMessage().tree);
+        }
+        else {
+            GENERATE_EXCEPTION("Invalid object format: {}", fmt);
+        }
+    }
 }
 /*
     Parse files that conatins key value paris on each line, separated by space,
@@ -101,6 +197,24 @@ GitObject::parseKeyValuesWithMessage(const std::string& data)
         objectData["gpgsig"] = "";
     }
     return objectData;
+}
+
+std::string
+GitObject::resolveReference(const std::filesystem::path& refereceDir)
+{
+    auto referenceContet = Utilities::readFile(refereceDir);
+    if (referenceContet.back() == '\n') {
+        referenceContet.erase(referenceContet.end() - 1);
+    }
+    if (referenceContet.starts_with("ref: ")) {
+        auto indirectReference = referenceContet.substr(5);
+        auto fullPathToIndirectReference = GitRepository::repoFile(
+            GitRepository::findRootGitRepository().value(), indirectReference);
+        return resolveReference(fullPathToIndirectReference);
+    }
+    else {
+        return referenceContet;
+    }
 }
 
 GitCommit::GitCommit(const GitRepository& repository, const ObjectData& data)
@@ -242,6 +356,8 @@ void GitTag::deserialize(const ObjectData& data)
 }
 
 std::string GitTag::format() const { return "tag"; }
+
+const TagMessage& GitTag::tagMessage() const { return m_tagMessage; }
 
 GitBlob::GitBlob(const GitRepository& repository, const ObjectData& data)
     : GitObject(repository, data)
