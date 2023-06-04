@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "git_objects/GitIndex.hpp"
 #include "git_objects/GitObject.hpp"
 #include "git_objects/GitObjectsFactory.hpp"
 #include "git_objects/GitRepository.hpp"
@@ -39,8 +40,9 @@ void hashFile(const std::string& path, const std::string& format, bool write)
 void dispalyLog(const GitRepository& repo, const GitHash& hash)
 {
     auto gitObject = GitObjectFactory::read(repo, hash);
-    GitCommit* commit = dynamic_cast<GitCommit*>(gitObject.get());
-    assert(commit != nullptr);
+    assert(gitObject->format() == "commit");
+    GitCommit* commit = static_cast<GitCommit*>(gitObject.get());
+    // assert(commit != nullptr);
 
     auto& commitMessage = commit->commitMessage();
 
@@ -188,6 +190,17 @@ void createTag(const std::string& tagName, const GitHash& objectHash,
     }
 }
 
+void listFiles()
+{
+    auto repo = GitRepository::findRootGitRepository().value();
+    auto indexFile = GitRepository::repoFile(repo, "index");
+
+    auto res = GitIndex::parse(indexFile);
+    for (const auto& entry : res) {
+        std::cout << entry.objectName << std::endl;
+    }
+}
+
 namespace po = boost::program_options;
 int main(int argc, char* argv[])
 {
@@ -238,6 +251,10 @@ int main(int argc, char* argv[])
         ("rev-parse",
             po::value<std::vector<std::string>>()->multitoken()->composing(),
             "Parse revision (or other objects )identifiers"
+        )
+        ("ls-files",
+            po::value<std::string>()->implicit_value(""),
+            "List all the stage files"
         );
     // clang-format on
 
@@ -325,8 +342,12 @@ int main(int argc, char* argv[])
                 auto objectName = revParseArgs[0];
                 auto fmt = revParseArgs.size() > 1 ? revParseArgs[1] : "";
                 auto repo = GitRepository::findRootGitRepository().value();
-                std::cout << GitObject::findObject(repo, objectName, fmt) << std::endl;
+                std::cout << GitObject::findObject(repo, objectName, fmt)
+                          << std::endl;
             }
+        }
+        else if (vm.count("ls-files")) {
+            listFiles();
         }
     }
     catch (std::runtime_error myex) {
