@@ -25,7 +25,6 @@ struct IndexEntry {
     uint32_t ino;
     // The object type, either b1000 (regular), b1010 (symlink), b1110
     // (gitlink).
-    // TODO: check if the
     uint32_t mode;
     // User ID of owner//
     uint32_t uid;

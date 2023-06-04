@@ -20,7 +20,7 @@ GitObjectFactory::create(const std::string& format, const GitRepository& repo,
     else if (format == "blob") {
         return createObject<GitBlob>(repo, objectData);
     }
-    return nullptr;
+    GENERATE_EXCEPTION("Wrong Git Object format: {}", format);
 }
 
 std::unique_ptr<GitObject> GitObjectFactory::read(const GitRepository& repo,
@@ -46,13 +46,6 @@ std::unique_ptr<GitObject> GitObjectFactory::read(const GitRepository& repo,
     }
 
     auto objectData = ObjectData(objectContent.substr(sizeEnds + 1));
-    if (auto object = GitObjectFactory::create(format, repo, objectData);
-        !object) {
-        GENERATE_EXCEPTION("Unknown type {} for object {}", format,
-                           objectHash.data());
-    }
-    else {
-        return object;
-    }
+    return GitObjectFactory::create(format, repo, objectData);
 }
 }; // namespace Git
