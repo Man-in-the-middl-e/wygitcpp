@@ -42,7 +42,6 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
     auto gitObject = GitObjectFactory::read(repo, hash);
     assert(gitObject->format() == "commit");
     GitCommit* commit = static_cast<GitCommit*>(gitObject.get());
-    // assert(commit != nullptr);
 
     auto& commitMessage = commit->commitMessage();
 
@@ -75,14 +74,17 @@ void listTree(const std::string& objectHash)
 
     auto object = GitObject::findObject(repo, objectHash, "tree");
     auto gitObject = GitObjectFactory::read(repo, object);
-    auto tree = dynamic_cast<GitTree*>(gitObject.get());
-    assert(tree != nullptr);
+    auto tree = static_cast<GitTree*>(gitObject.get());
 
     for (const auto& treeLeaf : tree->tree()) {
-        auto childFormat = GitObjectFactory::read(repo, treeLeaf.hash);
-        std::cout << fmt::format("{0} {1} {2}\t{3}\n", treeLeaf.fileMode,
-                                 childFormat->format(), treeLeaf.hash.data(),
-                                 treeLeaf.filePath.string());
+        try {
+            auto childFormat = GitObjectFactory::read(repo, treeLeaf.hash);
+            std::cout << fmt::format(
+                "{0} {1} {2}\t{3}\n", treeLeaf.fileMode, childFormat->format(),
+                treeLeaf.hash.data(), treeLeaf.filePath.string());
+        } catch (std::runtime_error e) {
+            std::cout << e.what() << std::endl;
+        }
     }
 }
 
@@ -128,13 +130,13 @@ void checkout(const GitHash& commit,
         std::filesystem::create_directories(checkoutDirectory);
     }
 
-    // TODO: avoid dynamic_cast by impelemnting read<T> function
-    if (auto gitCommit = dynamic_cast<GitCommit*>(gitObject.get()); gitCommit) {
+    if (gitObject->format() == "commit") {
+        auto gitCommit = static_cast<GitCommit*>(gitObject.get());
         auto treeHash = GitHash(gitCommit->commitMessage().tree);
         auto tree = GitObjectFactory::read(repo, treeHash);
         treeCheckout(tree.get(), repo, checkoutDirectory);
     }
-    else {
+    else if (gitObject->format() == "tree") {
         treeCheckout(gitObject.get(), repo, checkoutDirectory);
     }
 }

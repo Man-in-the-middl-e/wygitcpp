@@ -121,10 +121,12 @@ GitHash GitObject::findObject(const GitRepository& repo,
             return sha;
         }
 
-        if (auto tag = dynamic_cast<GitTag*>(object.get()); tag) {
+        if (object->format() == "tag") {
+            auto tag = static_cast<GitTag*>(object.get());
             sha = GitHash(tag->tagMessage().object);
         }
-        else if (auto commit = dynamic_cast<GitCommit*>(object.get()); commit) {
+        else if (object->format() == "commit") {
+            auto commit = static_cast<GitCommit*>(object.get());
             sha = GitHash(commit->commitMessage().tree);
         }
         else {
