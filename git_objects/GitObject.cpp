@@ -1,11 +1,10 @@
 #include "GitObject.hpp"
+#include "../utilities/Zlib.hpp"
 #include "GitObjectsFactory.hpp"
 
+#include <assert.h>
 #include <fstream>
-#include <memory>
 #include <regex>
-
-#include "../utilities/Zlib.hpp"
 
 namespace {
 std::vector<GitHash> resolveObject(const GitRepository& repo,
@@ -17,7 +16,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
     if (name == "HEAD") {
         // TODO: smells very badly, way too many conversions
         return {GitHash(GitObject::resolveReference(GitRepository::repoFile(
-            GitRepository::findRootGitRepository().value(), "HEAD")))};
+            GitRepository::findRoot(), "HEAD")))};
     }
 
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");
@@ -212,7 +211,7 @@ GitObject::resolveReference(const std::filesystem::path& refereceDir)
     if (referenceContet.starts_with("ref: ")) {
         auto indirectReference = referenceContet.substr(5);
         auto fullPathToIndirectReference = GitRepository::repoFile(
-            GitRepository::findRootGitRepository().value(), indirectReference);
+            GitRepository::findRoot(), indirectReference);
         return resolveReference(fullPathToIndirectReference);
     }
     else {

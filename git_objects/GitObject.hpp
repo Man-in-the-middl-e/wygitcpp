@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "../git_objects/GitRepository.hpp"
 #include "../utilities/SHA1.hpp"

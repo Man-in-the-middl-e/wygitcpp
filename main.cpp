@@ -16,14 +16,11 @@
 void catFile(const std::string& objectFormat,
              const std::string& objectReference)
 {
-    auto repository = GitRepository::findRootGitRepository(".");
-
-    if (repository.has_value()) {
-        auto objectHash = Git::GitObject::findObject(
-            repository.value(), objectReference, objectFormat);
-        auto object = GitObjectFactory::read(repository.value(), objectHash);
-        std::cout << object->serialize().data();
-    }
+    auto repository = GitRepository::findRoot();
+    auto objectHash =
+        Git::GitObject::findObject(repository, objectReference, objectFormat);
+    auto object = GitObjectFactory::read(repository, objectHash);
+    std::cout << object->serialize().data();
 }
 
 void hashFile(const std::string& path, const std::string& format, bool write)
@@ -70,7 +67,7 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
 
 void listTree(const std::string& objectHash)
 {
-    auto repo = GitRepository::findRootGitRepository().value();
+    auto repo = GitRepository::findRoot();
 
     auto object = GitObject::findObject(repo, objectHash, "tree");
     auto gitObject = GitObjectFactory::read(repo, object);
@@ -82,7 +79,8 @@ void listTree(const std::string& objectHash)
             std::cout << fmt::format(
                 "{0} {1} {2}\t{3}\n", treeLeaf.fileMode, childFormat->format(),
                 treeLeaf.hash.data(), treeLeaf.filePath.string());
-        } catch (std::runtime_error e) {
+        }
+        catch (std::runtime_error e) {
             std::cout << e.what() << std::endl;
         }
     }
@@ -110,7 +108,7 @@ void treeCheckout(const GitObject* object, const GitRepository& repo,
 void checkout(const GitHash& commit,
               const std::filesystem::path& checkoutDirectory)
 {
-    auto repo = GitRepository::findRootGitRepository().value();
+    auto repo = GitRepository::findRoot();
     auto gitObject = GitObjectFactory::read(
         repo, GitObject::findObject(repo, commit.data()));
 
@@ -165,7 +163,7 @@ void creatReference(const GitRepository& repo, const std::string& name,
 void createTag(const std::string& tagName, const GitHash& objectHash,
                bool createAssociativeTag)
 {
-    auto repo = GitRepository::findRootGitRepository().value();
+    auto repo = GitRepository::findRoot();
     if (createAssociativeTag) {
         std::ostringstream oss;
         oss << "object"
@@ -194,7 +192,7 @@ void createTag(const std::string& tagName, const GitHash& objectHash,
 
 void listFiles()
 {
-    auto repo = GitRepository::findRootGitRepository().value();
+    auto repo = GitRepository::findRoot();
     auto indexFile = GitRepository::repoFile(repo, "index");
 
     auto res = GitIndex::parse(indexFile);
@@ -214,7 +212,7 @@ int main(int argc, char* argv[])
             "Produce help message"
         )
         ("init",
-            po::value<std::string>(),
+            po::value<std::string>()->implicit_value("."),
             "Create an empty Git repository"
         )
         ("cat-file",
@@ -291,9 +289,9 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("log")) {
             auto commitHash = vm["log"].as<std::string>();
-            auto repo = GitRepository::findRootGitRepository();
-            auto object = GitObject::findObject(repo.value(), commitHash);
-            dispalyLog(repo.value(), object);
+            auto repo = GitRepository::findRoot();
+            auto object = GitObject::findObject(repo, commitHash);
+            dispalyLog(repo, object);
         }
         else if (vm.count("ls-tree")) {
             auto objectHash = vm["ls-tree"].as<std::string>();
@@ -319,7 +317,7 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("ls-tag")) {
             auto tagsPath = GitRepository::repoFile(
-                GitRepository::findRootGitRepository().value(), "refs", "tags");
+                GitRepository::findRoot(), "refs", "tags");
             if (!tagsPath.empty()) {
                 for (const auto& [_, tags] : showReferences(tagsPath)) {
                     for (const auto& tag : tags) {
@@ -343,7 +341,7 @@ int main(int argc, char* argv[])
             if (revParseArgs.size() >= 1) {
                 auto objectName = revParseArgs[0];
                 auto fmt = revParseArgs.size() > 1 ? revParseArgs[1] : "";
-                auto repo = GitRepository::findRootGitRepository().value();
+                auto repo = GitRepository::findRoot();
                 std::cout << GitObject::findObject(repo, objectName, fmt)
                           << std::endl;
             }

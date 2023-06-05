@@ -3,9 +3,11 @@
 
 #include <assert.h>
 #include <boost/property_tree/ini_parser.hpp>
-#include <fstream>
+#include <boost/property_tree/ptree.hpp>
 
 namespace Git {
+namespace ConfigurationParser = boost::property_tree;
+
 void writeDefaultConfiguration(const GitRepository::Fpath& configFilePath)
 {
     std::fstream configFile(configFilePath.string(),
@@ -22,61 +24,34 @@ void writeDefaultConfiguration(const GitRepository::Fpath& configFilePath)
     }
 }
 
-std::optional<GitRepository>
-GitRepository::findRootGitRepository(const GitRepository::Fpath& path,
-                                     bool required)
+GitRepository
+GitRepository::findRoot(const GitRepository::Fpath& path)
 {
     auto currentDir = Fs::canonical(path);
-
     if (auto gitDir = currentDir / ".git"; Fs::exists(gitDir)) {
-        return GitRepository::create(path);
+        static GitRepository repo = GitRepository::create(path);
+        return repo;
     }
 
     auto parentDir = currentDir.parent_path();
     if (parentDir == currentDir) {
-        if (required) {
-            GENERATE_EXCEPTION("Not a git directory {}", parentDir.string());
-        }
-        else {
-            return {};
-        }
+        GENERATE_EXCEPTION("Not a git directory {}", parentDir.string());
     }
-    return findRootGitRepository(parentDir, required);
+    return findRoot(parentDir);
 }
 
-GitRepository GitRepository::create(const Fpath& path, bool force)
+GitRepository GitRepository::create(const Fpath& path)
 {
     auto gitDir = path / ".git";
-    if (!(force || Fs::exists(gitDir))) {
-        GENERATE_EXCEPTION("Not a git repository {}", gitDir.string());
+    if (!Fs::is_directory(gitDir)) {
+        GENERATE_EXCEPTION("Not a git directory: {}", gitDir.string());
     }
-
-    auto configPath = gitDir / "config";
-
-    ConfigurationParser::ptree config;
-
-    if (!configPath.empty() && Fs::exists(configPath)) {
-        ConfigurationParser::ini_parser::read_ini(configPath, config);
-    }
-    else if (!force) {
-        GENERATE_EXCEPTION("Configuration file {} is missing\n",
-                           configPath.string());
-    }
-
-    if (!force) {
-        // TODO: check int conversion
-        auto version = config.get<int>("core.repositoryformatversion");
-        if (version != 0) {
-            GENERATE_EXCEPTION("Unsupported repositoryformatversion {}",
-                               version);
-        }
-    }
-    return GitRepository(path, gitDir, config);
+    return GitRepository(path, gitDir);
 }
 
 GitRepository GitRepository::initialize(const Fpath& path)
 {
-    auto repository = create(path, true);
+    auto repository = create(path);
 
     if (Fs::exists(repository.m_workTree)) {
         if (!Fs::is_directory(repository.m_workTree)) {
@@ -103,8 +78,9 @@ GitRepository GitRepository::initialize(const Fpath& path)
             "repository.\n";
         std::string headContent = "ref: refs/heads/master\n";
 
-        writeToFile(repoPath(repository, "description"), initialDescription);
-        writeToFile(repoPath(repository, "HEAD"), headContent);
+        Utilities::writeToFile(repoPath(repository, "description"),
+                               initialDescription);
+        Utilities::writeToFile(repoPath(repository, "HEAD"), headContent);
         writeDefaultConfiguration(repoPath(repository, "config"));
     }
     catch (std::runtime_error ex) {
@@ -114,9 +90,8 @@ GitRepository GitRepository::initialize(const Fpath& path)
     return repository;
 }
 
-GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir,
-                             const ConfigurationParser::ptree& config)
-    : m_workTree(workTree), m_gitDir(gitDir), m_configuration(config)
+GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
+    : m_workTree(workTree), m_gitDir(gitDir)
 {
 }
 

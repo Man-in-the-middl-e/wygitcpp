@@ -1,18 +1,11 @@
 #pragma once
 
-#include <boost/property_tree/ptree.hpp>
-#include <filesystem>
-#include <fmt/core.h>
 #include <fstream>
-#include <iostream>
-#include <optional>
-#include <string>
 
 #include "../utilities/Common.hpp"
 
 namespace Git {
 namespace Fs = std::filesystem;
-namespace ConfigurationParser = boost::property_tree;
 
 class GitRepository {
   public:
@@ -21,16 +14,14 @@ class GitRepository {
 
   public:
     static GitRepository initialize(const Fpath& path);
-    static GitRepository create(const Fpath& path, bool force = false);
-    static std::optional<GitRepository>
-    findRootGitRepository(const GitRepository::Fpath& path = ".",
-                          bool required = true);
+    static GitRepository create(const Fpath& path);
+    static GitRepository findRoot(const Fpath& path = ".");
 
   public:
     template <class... T>
     static Fpath repoPath(const GitRepository& repo, T&&... path)
     {
-        std::filesystem::path repoPath = (repo.gitDir() / ... / path);
+        Fpath repoPath = (repo.gitDir() / ... / path);
         return repoPath;
     }
 
@@ -39,18 +30,18 @@ class GitRepository {
                          T&&... path)
     {
         auto repositoryDir = repoPath(repo, std::forward<T>(path)...);
-        if (std::filesystem::exists(repositoryDir)) {
-            if (std::filesystem::is_directory(repositoryDir)) {
+        if (Fs::exists(repositoryDir)) {
+            if (Fs::is_directory(repositoryDir)) {
                 return repositoryDir;
             }
             else {
-                throw std::runtime_error(fmt::format("Not a directory: {}",
-                                                     repositoryDir.string()));
+                GENERATE_EXCEPTION("Not a directory: {}",
+                                   repositoryDir.string());
             }
         }
 
         if (mkdir == CreateDir::YES) {
-            std::filesystem::create_directories(repositoryDir);
+            Fs::create_directories(repositoryDir);
             return repositoryDir;
         }
         return {};
@@ -81,27 +72,14 @@ class GitRepository {
         return repoFile(repo, CreateDir::NO, std::forward<T>(path)...);
     }
 
-    static void writeToFile(const Fpath& path, const std::string& content)
-    {
-        std::fstream currentFile(path.string(),
-                                 std::fstream::out | std::fstream::trunc);
-        if (currentFile.is_open()) {
-            currentFile << content;
-            return;
-        }
-        GENERATE_EXCEPTION("Couldn't open file: {}", path.string());
-    }
-
     Fpath gitDir() const;
 
   private:
-    GitRepository(const Fpath& workTree, const Fpath& gitDir,
-                  const boost::property_tree::ptree& config);
+    GitRepository(const Fpath& workTree, const Fpath& gitDir);
 
   private:
     Fpath m_workTree;
     Fpath m_gitDir;
-    ConfigurationParser::ptree m_configuration;
 };
 }; // namespace Git
 
