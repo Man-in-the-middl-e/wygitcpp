@@ -21,7 +21,7 @@ void writeToFile(const std::filesystem::path& filePath, const std::string& data)
     ofs.write(data.c_str(), data.size());
 }
 
-std::string converTimeSinceEpoch(const std::string& timeSinceEpoch)
+std::string convertTimeSinceEpoch(const std::string& timeSinceEpoch)
 {
     time_t datetime = std::stol(timeSinceEpoch);
     auto humanReadableTime = std::string(ctime(&datetime));
@@ -36,6 +36,6 @@ std::string decodeDateIn(const std::string& gitTime)
     auto timeSinceEpochEnds = gitTime.find(' ');
     auto timeSinceEpoch = gitTime.substr(0, timeSinceEpochEnds);
     auto offset = gitTime.substr(timeSinceEpochEnds + 1);
-    return fmt::format("{} {}", converTimeSinceEpoch(timeSinceEpoch), offset);
+    return fmt::format("{} {}", convertTimeSinceEpoch(timeSinceEpoch), offset);
 }
 }; // namespace Utilities

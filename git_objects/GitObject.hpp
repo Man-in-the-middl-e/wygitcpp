@@ -48,7 +48,7 @@ struct GitTreeLeaf {
 class GitObject;
 class GitObject {
   public:
-    static GitHash write(GitObject* gitObject, bool acutallyWrite = true);
+    static GitHash write(GitObject* gitObject, bool actuallyWrite = true);
 
     static GitHash findObject(const std::string& name,
                               const std::string& format = "");
@@ -60,7 +60,7 @@ class GitObject {
   public:
     // TODO: avoid unnecessary copies, as object data could be up to few dozens
     // megabytes
-    // TODO: add new way of construction objcest, mb don't use ObjectData at all
+    // TODO: add new way of construction objects, mb don't use ObjectData at all
     virtual ObjectData serialize() = 0;
     virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;

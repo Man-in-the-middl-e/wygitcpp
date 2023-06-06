@@ -63,7 +63,7 @@ std::vector<IndexEntry> GitIndex::parse(const std::string& indexFilePath)
 {
     std::fstream ifs(indexFilePath, std::ios::binary | std::ios::in);
     if (!ifs.is_open()) {
-        GENERATE_EXCEPTION("Coulnd't find index file: {}", indexFilePath);
+        GENERATE_EXCEPTION("Couldn't find index file: {}", indexFilePath);
     }
     if (auto signature = readString(ifs, 4); signature != "DIRC") {
         GENERATE_EXCEPTION("Wrong file signature expected 'DIRC', got {}",

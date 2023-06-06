@@ -31,7 +31,7 @@ void hashFile(const std::string& path, const std::string& format, bool write)
 }
 
 // TODO: figure out when commit can have multiple parents
-void dispalyLog(const GitHash& hash)
+void displayLog(const GitHash& hash)
 {
     auto gitObject = GitObjectFactory::read(hash);
     assert(gitObject->format() == "commit");
@@ -58,7 +58,7 @@ void dispalyLog(const GitHash& hash)
         return;
     }
     else {
-        dispalyLog(GitHash(commitMessage.parent));
+        displayLog(GitHash(commitMessage.parent));
     }
 }
 
@@ -113,7 +113,7 @@ void checkout(const GitHash& commit,
         }
         else if (!std::filesystem::is_empty(checkoutDirectory)) {
             GENERATE_EXCEPTION(
-                "{}, is not an empyt directory. Currently checkout only works "
+                "{}, is not an empty directory. Currently checkout only works "
                 "with the empty directories",
                 checkoutDirectory.string());
         }
@@ -276,14 +276,14 @@ int main(int argc, char* argv[])
             auto hashFileArguments =
                 vm["hash-file"].as<std::vector<std::string>>();
             if (hashFileArguments.size() == 2) {
-                // TODO: make wirte opitonal argument
+                // TODO: make write optional argument
                 hashFile(hashFileArguments[0], hashFileArguments[1], true);
             }
         }
         else if (vm.count("log")) {
             auto commitHash = vm["log"].as<std::string>();
             auto object = GitObject::findObject(commitHash);
-            dispalyLog(object);
+            displayLog(object);
         }
         else if (vm.count("ls-tree")) {
             auto objectHash = vm["ls-tree"].as<std::string>();
@@ -319,12 +319,12 @@ int main(int argc, char* argv[])
             }
         }
         else if (vm.count("tag")) {
-            auto tagAruments = vm["tag"].as<std::vector<std::string>>();
-            if (tagAruments.size() >= 2) {
-                auto tagName = tagAruments[0];
-                auto objectHash = GitHash(tagAruments[1]);
+            auto tagArguments = vm["tag"].as<std::vector<std::string>>();
+            if (tagArguments.size() >= 2) {
+                auto tagName = tagArguments[0];
+                auto objectHash = GitHash(tagArguments[1]);
                 bool createAssociativeTag =
-                    tagAruments.size() == 3 && tagAruments[2] == "a";
+                    tagArguments.size() == 3 && tagArguments[2] == "a";
                 createTag(tagName, objectHash, createAssociativeTag);
             }
         }

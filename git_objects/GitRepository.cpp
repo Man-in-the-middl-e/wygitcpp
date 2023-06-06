@@ -20,12 +20,11 @@ void writeDefaultConfiguration(const GitRepository::Fpath& configFilePath)
         ConfigurationParser::write_ini(configFile, defaultConfiguration);
     }
     else {
-        GENERATE_EXCEPTION("Coudn't open {}", configFilePath.string());
+        GENERATE_EXCEPTION("Couldn't open {}", configFilePath.string());
     }
 }
 
-GitRepository
-GitRepository::findRoot(const GitRepository::Fpath& path)
+GitRepository GitRepository::findRoot(const GitRepository::Fpath& path)
 {
     auto currentDir = Fs::canonical(path);
     if (auto gitDir = currentDir / ".git"; Fs::exists(gitDir)) {
@@ -35,7 +34,8 @@ GitRepository::findRoot(const GitRepository::Fpath& path)
 
     auto parentDir = currentDir.parent_path();
     if (parentDir == currentDir) {
-        GENERATE_EXCEPTION("Coulnd't find git direcotry {}", parentDir.string());
+        GENERATE_EXCEPTION("Couldn't find git directory {}",
+                           parentDir.string());
     }
     return findRoot(parentDir);
 }

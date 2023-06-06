@@ -28,7 +28,7 @@ struct IndexEntry {
     uint32_t mode;
     // User ID of owner//
     uint32_t uid;
-    // Group ID of ownner (according to stat 2.  Isn'th)
+    // Group ID of owner (according to stat 2.  Isn'th)
     uint32_t gid;
     // Size of this object, in bytes
     uint32_t fsize;

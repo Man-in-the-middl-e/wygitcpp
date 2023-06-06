@@ -22,7 +22,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");
     std::smatch cm;
 
-    std::vector<GitHash> candiates;
+    std::vector<GitHash> candidates;
     if (auto matched = std::regex_match(name, cm, shaSignature); matched) {
         auto sha = cm.str();
 
@@ -40,7 +40,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
                 auto hashSuffix = dirEntry.path().filename().string();
                 if (dirEntry.is_regular_file() &&
                     hashSuffix.starts_with(beginningOfHash)) {
-                    candiates.push_back(GitHash(hashPrefix + hashSuffix));
+                    candidates.push_back(GitHash(hashPrefix + hashSuffix));
                 }
             }
         }
@@ -51,23 +51,23 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
         for (std::filesystem::directory_entry dirEntry :
              std::filesystem::directory_iterator{branchesPath}) {
             if (dirEntry.path().filename().string() == name) {
-                candiates.push_back(
+                candidates.push_back(
                     GitHash(GitObject::resolveReference(branchesPath / name)));
             }
         }
 
         auto tagsPath = GitRepository::repoPath(repo, "refs", "tags");
-        if (candiates.empty()) {
+        if (candidates.empty()) {
             for (std::filesystem::directory_entry dirEntry :
                  std::filesystem::directory_iterator{tagsPath}) {
                 if (dirEntry.path().filename().string() == name) {
-                    candiates.push_back(
+                    candidates.push_back(
                         GitHash(GitObject::resolveReference(tagsPath / name)));
                 }
             }
         }
     }
-    return candiates;
+    return candidates;
 }
 }; // namespace
 
@@ -75,7 +75,7 @@ namespace Git {
 
 GitObject::~GitObject() {}
 
-GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
+GitHash GitObject::write(GitObject* gitObject, bool actuallyWrite)
 {
     auto objectData = gitObject->serialize();
     auto fileContent = gitObject->format() + " " +
@@ -83,7 +83,7 @@ GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
                        objectData.data();
 
     auto fileHash = SHA1::computeHash(fileContent);
-    if (acutallyWrite) {
+    if (actuallyWrite) {
         auto objectFile = GitRepository::repoFile(
             GitRepository::findRoot(), GitRepository::CreateDir::YES, "objects",
             fileHash.directoryName(), fileHash.fileName());
@@ -131,7 +131,7 @@ GitHash GitObject::findObject(const std::string& name, const std::string& fmt)
     }
 }
 /*
-    Parse files that conatins key value paris on each line, separated by space,
+    Parse files that contains key value paris on each line, separated by space,
     with optional gpgsig, and message that is separated by new line.
     Example:
         tree 29ff16c9c14e2652b22f8b78bb08a5a07930c147
@@ -193,20 +193,20 @@ GitObject::parseKeyValuesWithMessage(const std::string& data)
 }
 
 std::string
-GitObject::resolveReference(const std::filesystem::path& refereceDir)
+GitObject::resolveReference(const std::filesystem::path& referenceDir)
 {
-    auto referenceContet = Utilities::readFile(refereceDir);
-    if (referenceContet.back() == '\n') {
-        referenceContet.erase(referenceContet.end() - 1);
+    auto referenceContent = Utilities::readFile(referenceDir);
+    if (referenceContent.back() == '\n') {
+        referenceContent.erase(referenceContent.end() - 1);
     }
-    if (referenceContet.starts_with("ref: ")) {
-        auto indirectReference = referenceContet.substr(5);
+    if (referenceContent.starts_with("ref: ")) {
+        auto indirectReference = referenceContent.substr(5);
         auto fullPathToIndirectReference = GitRepository::repoFile(
             GitRepository::findRoot(), indirectReference);
         return resolveReference(fullPathToIndirectReference);
     }
     else {
-        return referenceContet;
+        return referenceContent;
     }
 }
 
@@ -240,7 +240,7 @@ ObjectData GitCommit::serialize()
 void GitCommit::deserialize(const ObjectData& data)
 {
     auto commitMessage = GitObject::parseKeyValuesWithMessage(data.data());
-    // NOTE: use [], so if the element is not present empty string will be returend:)
+    // NOTE: use [], so if the element is not present empty string will be returned:)
     m_commitMessage = {.tree = commitMessage["tree"],
                        .parent = commitMessage["parent"],
                        .author = commitMessage["author"],
