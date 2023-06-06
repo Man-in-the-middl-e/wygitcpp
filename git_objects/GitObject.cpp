@@ -15,8 +15,8 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
     }
     if (name == "HEAD") {
         // TODO: smells very badly, way too many conversions
-        return {GitHash(GitObject::resolveReference(GitRepository::repoFile(
-            GitRepository::findRoot(), "HEAD")))};
+        return {GitHash(GitObject::resolveReference(
+            GitRepository::repoFile(GitRepository::findRoot(), "HEAD")))};
     }
 
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");
@@ -73,8 +73,6 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
 
 namespace Git {
 
-GitRepository GitObject::repository() const { return m_repository; }
-
 GitObject::~GitObject() {}
 
 GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
@@ -85,19 +83,18 @@ GitHash GitObject::write(GitObject* gitObject, bool acutallyWrite)
                        objectData.data();
 
     auto fileHash = SHA1::computeHash(fileContent);
-
     if (acutallyWrite) {
         auto objectFile = GitRepository::repoFile(
-            gitObject->repository(), GitRepository::CreateDir::YES, "objects",
+            GitRepository::findRoot(), GitRepository::CreateDir::YES, "objects",
             fileHash.directoryName(), fileHash.fileName());
         Zlib::compress(objectFile, fileContent);
     }
     return fileHash;
 }
 
-GitHash GitObject::findObject(const GitRepository& repo,
-                              const std::string& name, const std::string& fmt)
+GitHash GitObject::findObject(const std::string& name, const std::string& fmt)
 {
+    auto repo = GitRepository::findRoot();
     auto shas = resolveObject(repo, name);
     if (shas.empty()) {
         GENERATE_EXCEPTION("No such reference: {}", name);
@@ -114,7 +111,7 @@ GitHash GitObject::findObject(const GitRepository& repo,
     }
 
     while (true) {
-        auto object = GitObjectFactory::read(repo, sha);
+        auto object = GitObjectFactory::read(sha);
 
         if (object->format() == fmt) {
             return sha;
@@ -219,10 +216,7 @@ GitObject::resolveReference(const std::filesystem::path& refereceDir)
     }
 }
 
-GitCommit::GitCommit(const GitRepository& repository, const ObjectData& data)
-    : GitObject(repository, data)
-{
-}
+GitCommit::GitCommit(const ObjectData& data) : GitObject(data) {}
 
 ObjectData GitCommit::serialize()
 {
@@ -265,10 +259,7 @@ const CommitMessage& GitCommit::commitMessage() const
     return m_commitMessage;
 }
 
-GitTree::GitTree(const GitRepository& repository, const ObjectData& data)
-    : GitObject(repository, data)
-{
-}
+GitTree::GitTree(const ObjectData& data) : GitObject(data) {}
 
 ObjectData GitTree::serialize()
 {
@@ -318,10 +309,7 @@ std::string GitTree::format() const { return "tree"; }
 
 const std::vector<GitTreeLeaf> GitTree::tree() const { return m_tree; }
 
-GitTag::GitTag(const GitRepository& repository, const ObjectData& data)
-    : GitObject(repository, data)
-{
-}
+GitTag::GitTag(const ObjectData& data) : GitObject(data) {}
 
 ObjectData GitTag::serialize()
 {
@@ -361,10 +349,7 @@ std::string GitTag::format() const { return "tag"; }
 
 const TagMessage& GitTag::tagMessage() const { return m_tagMessage; }
 
-GitBlob::GitBlob(const GitRepository& repository, const ObjectData& data)
-    : GitObject(repository, data)
-{
-}
+GitBlob::GitBlob(const ObjectData& data) : GitObject(data) {}
 
 ObjectData GitBlob::serialize() { return m_data; }
 

@@ -50,8 +50,7 @@ class GitObject {
   public:
     static GitHash write(GitObject* gitObject, bool acutallyWrite = true);
 
-    static GitHash findObject(const GitRepository& repo,
-                              const std::string& name,
+    static GitHash findObject(const std::string& name,
                               const std::string& format = "");
     static KeyValuesWithMessage
     parseKeyValuesWithMessage(const std::string& data);
@@ -66,18 +65,12 @@ class GitObject {
     virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;
 
-    GitRepository repository() const;
-
     virtual ~GitObject();
 
   protected:
-    GitObject(const GitRepository& repository, const ObjectData& data)
-        : m_repository(repository), m_data(data)
-    {
-    }
+    GitObject(const ObjectData& data) : m_data(data) {}
 
   protected:
-    GitRepository m_repository;
     ObjectData m_data;
 };
 
@@ -85,7 +78,7 @@ class GitCommit : public GitObject {
   public:
     // TODO: make constructors private, the only proper way to create objects is
     // through factory
-    GitCommit(const GitRepository& repository, const ObjectData& data);
+    GitCommit(const ObjectData& data);
 
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
@@ -99,7 +92,7 @@ class GitCommit : public GitObject {
 
 class GitTree : public GitObject {
   public:
-    GitTree(const GitRepository& repository, const ObjectData& data);
+    GitTree(const ObjectData& data);
 
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
@@ -116,7 +109,7 @@ class GitTree : public GitObject {
 
 class GitTag : public GitObject {
   public:
-    GitTag(const GitRepository& repository, const ObjectData& data);
+    GitTag(const ObjectData& data);
 
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
@@ -130,7 +123,7 @@ class GitTag : public GitObject {
 
 class GitBlob : public GitObject {
   public:
-    GitBlob(const GitRepository& repository, const ObjectData& data);
+    GitBlob(const ObjectData& data);
 
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;

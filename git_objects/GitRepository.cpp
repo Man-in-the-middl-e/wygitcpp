@@ -35,18 +35,14 @@ GitRepository::findRoot(const GitRepository::Fpath& path)
 
     auto parentDir = currentDir.parent_path();
     if (parentDir == currentDir) {
-        GENERATE_EXCEPTION("Not a git directory {}", parentDir.string());
+        GENERATE_EXCEPTION("Coulnd't find git direcotry {}", parentDir.string());
     }
     return findRoot(parentDir);
 }
 
 GitRepository GitRepository::create(const Fpath& path)
 {
-    auto gitDir = path / ".git";
-    if (!Fs::is_directory(gitDir)) {
-        GENERATE_EXCEPTION("Not a git directory: {}", gitDir.string());
-    }
-    return GitRepository(path, gitDir);
+    return GitRepository(path, path / ".git");
 }
 
 GitRepository GitRepository::initialize(const Fpath& path)
@@ -59,7 +55,7 @@ GitRepository GitRepository::initialize(const Fpath& path)
                                repository.m_workTree.string());
         }
         else if (!Fs::is_empty(repository.m_workTree)) {
-            GENERATE_EXCEPTION("{} is not empty!",
+            GENERATE_EXCEPTION("{} is already a git repository!",
                                Fs::absolute(repository.m_workTree).string());
         }
     }

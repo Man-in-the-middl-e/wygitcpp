@@ -16,27 +16,24 @@
 void catFile(const std::string& objectFormat,
              const std::string& objectReference)
 {
-    auto repository = GitRepository::findRoot();
-    auto objectHash =
-        Git::GitObject::findObject(repository, objectReference, objectFormat);
-    auto object = GitObjectFactory::read(repository, objectHash);
+    auto objectHash = Git::GitObject::findObject(objectReference, objectFormat);
+    auto object = GitObjectFactory::read(objectHash);
     std::cout << object->serialize().data();
 }
 
 void hashFile(const std::string& path, const std::string& format, bool write)
 {
     auto fileContent = Utilities::readFile(path);
-    auto repository = GitRepository::create(".");
-    auto gitObject = GitObjectFactory::create(format, repository, fileContent);
+    auto gitObject = GitObjectFactory::create(format, fileContent);
 
     auto objectHash = Git::GitObject::write(gitObject.get(), write);
     std::cout << "Object ID was created: " << objectHash << std::endl;
 }
 
 // TODO: figure out when commit can have multiple parents
-void dispalyLog(const GitRepository& repo, const GitHash& hash)
+void dispalyLog(const GitHash& hash)
 {
-    auto gitObject = GitObjectFactory::read(repo, hash);
+    auto gitObject = GitObjectFactory::read(hash);
     assert(gitObject->format() == "commit");
     GitCommit* commit = static_cast<GitCommit*>(gitObject.get());
 
@@ -61,21 +58,19 @@ void dispalyLog(const GitRepository& repo, const GitHash& hash)
         return;
     }
     else {
-        dispalyLog(repo, GitHash(commitMessage.parent));
+        dispalyLog(GitHash(commitMessage.parent));
     }
 }
 
 void listTree(const std::string& objectHash)
 {
-    auto repo = GitRepository::findRoot();
-
-    auto object = GitObject::findObject(repo, objectHash, "tree");
-    auto gitObject = GitObjectFactory::read(repo, object);
+    auto object = GitObject::findObject(objectHash, "tree");
+    auto gitObject = GitObjectFactory::read(object);
     auto tree = static_cast<GitTree*>(gitObject.get());
 
     for (const auto& treeLeaf : tree->tree()) {
         try {
-            auto childFormat = GitObjectFactory::read(repo, treeLeaf.hash);
+            auto childFormat = GitObjectFactory::read(treeLeaf.hash);
             std::cout << fmt::format(
                 "{0} {1} {2}\t{3}\n", treeLeaf.fileMode, childFormat->format(),
                 treeLeaf.hash.data(), treeLeaf.filePath.string());
@@ -86,17 +81,17 @@ void listTree(const std::string& objectHash)
     }
 }
 
-void treeCheckout(const GitObject* object, const GitRepository& repo,
+void treeCheckout(const GitObject* object,
                   const std::filesystem::path& checkoutDirectory)
 {
     auto treeObject = dynamic_cast<const GitTree*>(object);
     for (const auto& treeLeaf : treeObject->tree()) {
-        auto childObject = GitObjectFactory::read(repo, treeLeaf.hash);
+        auto childObject = GitObjectFactory::read(treeLeaf.hash);
         auto destination = checkoutDirectory / treeLeaf.filePath;
 
         if (childObject->format() == "tree") {
             std::filesystem::create_directories(destination);
-            treeCheckout(childObject.get(), repo, destination);
+            treeCheckout(childObject.get(), destination);
         }
         else if (childObject->format() == "blob") {
             Utilities::writeToFile(destination,
@@ -108,9 +103,8 @@ void treeCheckout(const GitObject* object, const GitRepository& repo,
 void checkout(const GitHash& commit,
               const std::filesystem::path& checkoutDirectory)
 {
-    auto repo = GitRepository::findRoot();
-    auto gitObject = GitObjectFactory::read(
-        repo, GitObject::findObject(repo, commit.data()));
+    auto gitObject =
+        GitObjectFactory::read(GitObject::findObject(commit.data()));
 
     if (std::filesystem::exists(checkoutDirectory)) {
         if (!std::filesystem::is_directory(checkoutDirectory)) {
@@ -131,11 +125,11 @@ void checkout(const GitHash& commit,
     if (gitObject->format() == "commit") {
         auto gitCommit = static_cast<GitCommit*>(gitObject.get());
         auto treeHash = GitHash(gitCommit->commitMessage().tree);
-        auto tree = GitObjectFactory::read(repo, treeHash);
-        treeCheckout(tree.get(), repo, checkoutDirectory);
+        auto tree = GitObjectFactory::read(treeHash);
+        treeCheckout(tree.get(), checkoutDirectory);
     }
     else if (gitObject->format() == "tree") {
-        treeCheckout(gitObject.get(), repo, checkoutDirectory);
+        treeCheckout(gitObject.get(), checkoutDirectory);
     }
 }
 
@@ -153,9 +147,9 @@ showReferences(const std::filesystem::path& refDir)
     return refs;
 }
 
-void creatReference(const GitRepository& repo, const std::string& name,
-                    const GitHash& hash)
+void creatReference(const std::string& name, const GitHash& hash)
 {
+    auto repo = GitRepository::findRoot();
     auto referencePath = GitRepository::repoFile(repo, "refs", "tags", name);
     Utilities::writeToFile(referencePath, hash.data() + "\n");
 }
@@ -163,7 +157,6 @@ void creatReference(const GitRepository& repo, const std::string& name,
 void createTag(const std::string& tagName, const GitHash& objectHash,
                bool createAssociativeTag)
 {
-    auto repo = GitRepository::findRoot();
     if (createAssociativeTag) {
         std::ostringstream oss;
         oss << "object"
@@ -181,12 +174,12 @@ void createTag(const std::string& tagName, const GitHash& objectHash,
                "message!"
             << std::endl;
         auto tagData = ObjectData(oss.str());
-        auto gitTag = GitObjectFactory::create("tag", repo, tagData);
+        auto gitTag = GitObjectFactory::create("tag", tagData);
         auto tagSHA = GitObject::write(gitTag.get());
-        creatReference(repo, tagName, tagSHA);
+        creatReference(tagName, tagSHA);
     }
     else {
-        creatReference(repo, tagName, objectHash);
+        creatReference(tagName, objectHash);
     }
 }
 
@@ -289,9 +282,8 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("log")) {
             auto commitHash = vm["log"].as<std::string>();
-            auto repo = GitRepository::findRoot();
-            auto object = GitObject::findObject(repo, commitHash);
-            dispalyLog(repo, object);
+            auto object = GitObject::findObject(commitHash);
+            dispalyLog(object);
         }
         else if (vm.count("ls-tree")) {
             auto objectHash = vm["ls-tree"].as<std::string>();
@@ -316,8 +308,8 @@ int main(int argc, char* argv[])
             }
         }
         else if (vm.count("ls-tag")) {
-            auto tagsPath = GitRepository::repoFile(
-                GitRepository::findRoot(), "refs", "tags");
+            auto tagsPath = GitRepository::repoFile(GitRepository::findRoot(),
+                                                    "refs", "tags");
             if (!tagsPath.empty()) {
                 for (const auto& [_, tags] : showReferences(tagsPath)) {
                     for (const auto& tag : tags) {
@@ -341,8 +333,7 @@ int main(int argc, char* argv[])
             if (revParseArgs.size() >= 1) {
                 auto objectName = revParseArgs[0];
                 auto fmt = revParseArgs.size() > 1 ? revParseArgs[1] : "";
-                auto repo = GitRepository::findRoot();
-                std::cout << GitObject::findObject(repo, objectName, fmt)
+                std::cout << GitObject::findObject(objectName, fmt)
                           << std::endl;
             }
         }

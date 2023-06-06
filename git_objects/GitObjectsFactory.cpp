@@ -5,28 +5,27 @@
 namespace Git {
 
 std::unique_ptr<GitObject>
-GitObjectFactory::create(const std::string& format, const GitRepository& repo,
+GitObjectFactory::create(const std::string& format,
                          const ObjectData& objectData)
 {
     if (format == "commit") {
-        return createObject<GitCommit>(repo, objectData);
+        return createObject<GitCommit>(objectData);
     }
     else if (format == "tree") {
-        return createObject<GitTree>(repo, objectData);
+        return createObject<GitTree>(objectData);
     }
     else if (format == "tag") {
-        return createObject<GitTag>(repo, objectData);
+        return createObject<GitTag>(objectData);
     }
     else if (format == "blob") {
-        return createObject<GitBlob>(repo, objectData);
+        return createObject<GitBlob>(objectData);
     }
     GENERATE_EXCEPTION("Wrong Git Object format: {}", format);
 }
 
-std::unique_ptr<GitObject> GitObjectFactory::read(const GitRepository& repo,
-                                                  const GitHash& objectHash)
+std::unique_ptr<GitObject> GitObjectFactory::read(const GitHash& objectHash)
 {
-
+    auto repo = GitRepository::findRoot();
     auto path = GitRepository::repoFile(
         repo, "objects", objectHash.directoryName(), objectHash.fileName());
 
@@ -46,6 +45,6 @@ std::unique_ptr<GitObject> GitObjectFactory::read(const GitRepository& repo,
     }
 
     auto objectData = ObjectData(objectContent.substr(sizeEnds + 1));
-    return GitObjectFactory::create(format, repo, objectData);
+    return GitObjectFactory::create(format, objectData);
 }
 }; // namespace Git
