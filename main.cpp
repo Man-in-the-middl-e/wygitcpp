@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
             "Compute object ID and optionally creates a blob from a file"
         )
         ("log",
-            po::value<std::string>(),
+            po::value<std::string>()->implicit_value("HEAD"),
             "Display history of a given commit."
         )
         ("ls-tree",
@@ -293,7 +293,7 @@ int main(int argc, char* argv[])
             auto checkoutArguments =
                 vm["checkout"].as<std::vector<std::string>>();
             if (checkoutArguments.size() == 2) {
-                auto hash = GitHash(checkoutArguments[0]);
+                auto hash = GitObject::findObject(checkoutArguments[0]);
                 auto checkoutDir =
                     std::filesystem::absolute(checkoutArguments[1]);
                 checkout(hash, checkoutDir);
