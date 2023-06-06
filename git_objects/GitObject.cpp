@@ -189,12 +189,6 @@ GitObject::parseKeyValuesWithMessage(const std::string& data)
         objectData[key] = value;
         start = valueEnds + 1;
     }
-
-    // add empty gpgsig if it is not present, so the
-    // caller don't need to check if this value is present
-    if (objectData.find("gpgsig") == objectData.end()) {
-        objectData["gpgsig"] = "";
-    }
     return objectData;
 }
 
@@ -224,8 +218,10 @@ ObjectData GitCommit::serialize()
 
     oss << "tree"
         << " " << m_commitMessage.tree << std::endl;
-    oss << "parent"
-        << " " << m_commitMessage.parent << std::endl;
+    if (!m_commitMessage.parent.empty()) {
+        oss << "parent"
+            << " " << m_commitMessage.parent << std::endl;
+    }
     oss << "author"
         << " " << m_commitMessage.author << std::endl;
     oss << "committer"
@@ -244,12 +240,13 @@ ObjectData GitCommit::serialize()
 void GitCommit::deserialize(const ObjectData& data)
 {
     auto commitMessage = GitObject::parseKeyValuesWithMessage(data.data());
-    m_commitMessage = {.tree = commitMessage.at("tree"),
-                       .parent = commitMessage.at("parent"),
-                       .author = commitMessage.at("author"),
-                       .committer = commitMessage.at("committer"),
-                       .gpgsig = commitMessage.at("gpgsig"),
-                       .message = commitMessage.at("message")};
+    // NOTE: use [], so if the element is not present empty string will be returend:)
+    m_commitMessage = {.tree = commitMessage["tree"],
+                       .parent = commitMessage["parent"],
+                       .author = commitMessage["author"],
+                       .committer = commitMessage["committer"],
+                       .gpgsig = commitMessage["gpgsig"],
+                       .message = commitMessage["message"]};
 }
 
 std::string GitCommit::format() const { return "commit"; }
@@ -337,12 +334,12 @@ ObjectData GitTag::serialize()
 void GitTag::deserialize(const ObjectData& data)
 {
     auto tagMessage = GitObject::parseKeyValuesWithMessage(data.data());
-    m_tagMessage = {.object = tagMessage.at("object"),
-                    .type = tagMessage.at("type"),
-                    .tag = tagMessage.at("tag"),
-                    .tagger = tagMessage.at("tagger"),
-                    .gpgsig = tagMessage.at("gpgsig"),
-                    .message = tagMessage.at("message")};
+    m_tagMessage = {.object = tagMessage["object"],
+                    .type = tagMessage["type"],
+                    .tag = tagMessage["tag"],
+                    .tagger = tagMessage["tagger"],
+                    .gpgsig = tagMessage["gpgsig"],
+                    .message = tagMessage["message"]};
 }
 
 std::string GitTag::format() const { return "tag"; }
