@@ -21,13 +21,14 @@ void catFile(const std::string& objectFormat,
     std::cout << object->serialize().data();
 }
 
-void hashFile(const std::string& path, const std::string& format, bool write)
+GitHash hashFile(const std::filesystem::path& path, const std::string& format,
+                 bool write = true)
 {
     auto fileContent = Utilities::readFile(path);
     auto gitObject = GitObjectFactory::create(format, fileContent);
 
     auto objectHash = Git::GitObject::write(gitObject.get(), write);
-    std::cout << "Object ID was created: " << objectHash << std::endl;
+    return objectHash;
 }
 
 // TODO: figure out when commit can have multiple parents
@@ -70,10 +71,10 @@ void listTree(const std::string& objectHash)
 
     for (const auto& treeLeaf : tree->tree()) {
         try {
-            auto childFormat = GitObjectFactory::read(treeLeaf.hash);
-            std::cout << fmt::format(
-                "{0} {1} {2}\t{3}\n", treeLeaf.fileMode, childFormat->format(),
-                treeLeaf.hash.data(), treeLeaf.filePath.string());
+            auto childFormat = GitObjectFactory::read(treeLeaf.hash)->format();
+            std::cout << fmt::format("{0} {1} {2}\t{3}\n", treeLeaf.fileMode,
+                                     childFormat, treeLeaf.hash.data(),
+                                     treeLeaf.filePath.string());
         }
         catch (std::runtime_error e) {
             std::cout << e.what() << std::endl;
@@ -194,6 +195,41 @@ void listFiles()
     }
 }
 
+GitHash createTree(const std::filesystem::path& dirPath)
+{
+    std::vector<GitTreeLeaf> leaves;
+    for (auto dirEntry : std::filesystem::directory_iterator(dirPath)) {
+        auto dirEntryPath = dirEntry.path();
+        if (dirEntry.is_regular_file()) {
+            leaves.push_back({.fileMode = GitTree::fileMode(dirEntry, "blob"),
+                              .filePath = dirEntryPath.filename(),
+                              .hash = hashFile(dirEntry.path(), "blob")});
+        }
+        else if (dirEntry.is_directory() && !dirPath.empty() &&
+                 !dirEntryPath.string().ends_with(".git")) {
+            // TODO: add support for the commit(submodules)
+            leaves.push_back({.fileMode = GitTree::fileMode(dirEntry, "tree"),
+                              .filePath = dirEntry,
+                              .hash = createTree(dirEntryPath)});
+        }
+    }
+
+    GitTree tree(leaves);
+    auto treeHash = GitObject::write(&tree);
+    return treeHash;
+}
+
+void commit(const std::string& message = "")
+{
+    auto workTree = GitRepository::findRoot().workTree();
+    if (workTree.empty()) {
+        std::cout << "There is nothing to commit" << std::endl;
+    }
+    else {
+        std::cout << "Create tree object: " << createTree(workTree) << std::endl;
+    }
+}
+
 namespace po = boost::program_options;
 int main(int argc, char* argv[])
 {
@@ -248,7 +284,12 @@ int main(int argc, char* argv[])
         ("ls-files",
             po::value<std::string>()->implicit_value(""),
             "List all the stage files"
-        );
+        )
+        ("commit",
+            po::value<std::string>()->implicit_value("."),
+            "Create commit"
+        )
+        ;
     // clang-format on
 
     po::variables_map vm;
@@ -339,6 +380,9 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("ls-files")) {
             listFiles();
+        }
+        else if (vm.count("commit")) {
+            commit();
         }
     }
     catch (std::runtime_error myex) {

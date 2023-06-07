@@ -93,12 +93,17 @@ class GitCommit : public GitObject {
 class GitTree : public GitObject {
   public:
     GitTree(const ObjectData& data);
+    GitTree(const std::vector<GitTreeLeaf>& leaves);
 
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
 
-    const std::vector<GitTreeLeaf> tree() const;
+    const std::vector<GitTreeLeaf>& tree() const;
+
+  public:
+    static std::string fileMode(const std::filesystem::directory_entry& entry,
+                                const std::string& format);
 
   private:
     std::vector<GitTreeLeaf> parseGitTree(const std::string& data);
@@ -140,3 +145,4 @@ using GitTree = Git::GitTree;
 using GitTag = Git::GitTag;
 using GitBlob = Git::GitBlob;
 using ObjectData = Git::ObjectData;
+using GitTreeLeaf = Git::GitTreeLeaf;

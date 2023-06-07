@@ -257,6 +257,10 @@ const CommitMessage& GitCommit::commitMessage() const
 }
 
 GitTree::GitTree(const ObjectData& data) : GitObject(data) {}
+GitTree::GitTree(const std::vector<GitTreeLeaf>& leaves)
+    : GitObject({}), m_tree(leaves)
+{
+}
 
 ObjectData GitTree::serialize()
 {
@@ -291,8 +295,7 @@ std::vector<GitTreeLeaf> GitTree::parseGitTree(const std::string& data)
             data.substr(pathEnds + 1, GitHash::BINARY_HASH_SIZE));
 
         start = pathEnds + GitHash::BINARY_HASH_SIZE + 1;
-        tree.push_back(
-            {.fileMode = fileMode, .filePath = path, .hash = GitHash(sha)});
+        tree.push_back({.fileMode = fileMode, .filePath = path, .hash = sha});
     }
     return tree;
 }
@@ -304,7 +307,49 @@ void GitTree::deserialize(const ObjectData& data)
 
 std::string GitTree::format() const { return "tree"; }
 
-const std::vector<GitTreeLeaf> GitTree::tree() const { return m_tree; }
+const std::vector<GitTreeLeaf>& GitTree::tree() const { return m_tree; }
+
+/*
+The file mode; one of 100644 for file (blob), 100755 for executable (blob),
+040000 for subdirectory (tree), 160000 for submodule (commit),
+or 120000 for a blob that specifies the path of a symlink.
+Can be one of: 100644, 100755, 040000, 160000, 120000
+*/
+std::string GitTree::fileMode(const std::filesystem::directory_entry& entry,
+                              const std::string& format)
+{
+    using std::filesystem::perms;
+    auto isExecutable = [=](perms filePerms) {
+        return (perms::none != (filePerms & perms::owner_exec)) ||
+               (perms::none != (filePerms & perms::group_exec)) ||
+               (perms::none != (filePerms & perms::others_exec));
+    };
+
+    if ((entry.is_regular_file() || entry.is_symlink()) && format == "blob") {
+        auto filePerms =
+            std::filesystem::status(entry.path().filename()).permissions();
+        if (isExecutable(filePerms)) {
+            return "100755";
+        }
+        else if (entry.is_symlink()) {
+            return "120000";
+        }
+        else {
+            return "100644";
+        }
+    }
+    else if (entry.is_directory()) {
+        if (format == "tree") {
+            return "040000";
+        }
+        else if (format == "commit") {
+            return "160000";
+        }
+    }
+    GENERATE_EXCEPTION(
+        "Wrong file format or directory entry. Directory: {}, format: {}",
+        entry.path().string(), format);
+}
 
 GitTag::GitTag(const ObjectData& data) : GitObject(data) {}
 

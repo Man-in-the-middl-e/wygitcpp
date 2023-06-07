@@ -72,7 +72,8 @@ class GitRepository {
         return repoFile(repo, CreateDir::NO, std::forward<T>(path)...);
     }
 
-    Fpath gitDir() const;
+    const Fpath& gitDir() const;
+    const Fpath& workTree() const;
 
   private:
     GitRepository(const Fpath& workTree, const Fpath& gitDir);

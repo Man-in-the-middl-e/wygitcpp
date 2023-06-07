@@ -91,5 +91,6 @@ GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
 {
 }
 
-GitRepository::Fpath GitRepository::gitDir() const { return m_gitDir; }
+const GitRepository::Fpath& GitRepository::gitDir() const { return m_gitDir; }
+const GitRepository::Fpath& GitRepository::workTree() const {return m_workTree; }
 }; // namespace Git
