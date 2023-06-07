@@ -63,18 +63,22 @@ void displayLog(const GitHash& hash)
     }
 }
 
-void listTree(const std::string& objectHash)
+void listTree(const GitHash& objectHash, const std::string& parentDir, bool recursive)
 {
-    auto object = GitObject::findObject(objectHash, "tree");
-    auto gitObject = GitObjectFactory::read(object);
+    auto gitObject = GitObjectFactory::read(objectHash);
     auto tree = static_cast<GitTree*>(gitObject.get());
 
     for (const auto& treeLeaf : tree->tree()) {
         try {
             auto childFormat = GitObjectFactory::read(treeLeaf.hash)->format();
-            std::cout << fmt::format("{0} {1} {2}\t{3}\n", treeLeaf.fileMode,
-                                     childFormat, treeLeaf.hash.data(),
-                                     treeLeaf.filePath.string());
+            if (recursive && childFormat == "tree") {
+                listTree(treeLeaf.hash, treeLeaf.filePath.filename(), recursive);
+            }
+            else {
+                std::cout << fmt::format(
+                    "{0} {1} {2}\t{3}\n", treeLeaf.fileMode, childFormat,
+                    treeLeaf.hash.data(), (parentDir / treeLeaf.filePath).string());
+            }
         }
         catch (std::runtime_error e) {
             std::cout << e.what() << std::endl;
@@ -226,7 +230,8 @@ void commit(const std::string& message = "")
         std::cout << "There is nothing to commit" << std::endl;
     }
     else {
-        std::cout << "Create tree object: " << createTree(workTree) << std::endl;
+        std::cout << "Create tree object: " << createTree(workTree)
+                  << std::endl;
     }
 }
 
@@ -257,7 +262,7 @@ int main(int argc, char* argv[])
             "Display history of a given commit."
         )
         ("ls-tree",
-            po::value<std::string>(),
+            po::value<std::vector<std::string>>()->multitoken()->composing(),
             "Pretty-print a tree object."
         )
         ("checkout",
@@ -327,8 +332,11 @@ int main(int argc, char* argv[])
             displayLog(object);
         }
         else if (vm.count("ls-tree")) {
-            auto objectHash = vm["ls-tree"].as<std::string>();
-            listTree(objectHash);
+            auto lsTreeArguments = vm["ls-tree"].as<std::vector<std::string>>();
+            auto objectHash = GitObject::findObject(lsTreeArguments[0], "tree");
+            auto recursive =
+                lsTreeArguments.size() > 1 && lsTreeArguments[1] == "r";
+            listTree(objectHash, "", recursive);
         }
         else if (vm.count("checkout")) {
             auto checkoutArguments =
