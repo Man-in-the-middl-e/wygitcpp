@@ -1,4 +1,4 @@
-project(wyagi)
+project(wyagit)
 cmake_minimum_required(VERSION 3.20)
 
 set(Boost_USE_STATIC_LIBS OFF) 
@@ -14,20 +14,25 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+set(WYAGIT "WyagitCommon")
+
 if(Boost_FOUND)
     include_directories(Project PUBLIC  ${Boost_INCLUDE_DIRS}) 
     set(CMAKE_CXX_FLAGS "--std=c++2a")
 
-    set(Objects_Sources git_objects/GitObject.cpp 
-                        git_objects/GitRepository.cpp 
-                        git_objects/GitHash.cpp
-                        git_objects/GitObjectsFactory.cpp
-                        git_objects/GitIndex.cpp)
+    add_library(${WYAGIT} STATIC 
+                          git_objects/GitObject.cpp 
+                          git_objects/GitRepository.cpp 
+                          git_objects/GitHash.cpp
+                          git_objects/GitObjectsFactory.cpp
+                          git_objects/GitIndex.cpp
+                          utilities/Common.cpp
+                          utilities/SHA1.cpp
+                          utilities/Zlib.cpp)
+    target_link_libraries(${WYAGIT} ${Boost_LIBRARIES} fmt)
 
-    set(Common_Sources utilities/Common.cpp
-                       utilities/SHA1.cpp
-                       utilities/Zlib.cpp)
-
-    add_executable(wyagit main.cpp  ${Common_Sources} ${Objects_Sources}) 
-    target_link_libraries(wyagit ${Boost_LIBRARIES} fmt)
+    add_executable(wyagit main.cpp) 
+    target_link_libraries(wyagit ${WYAGIT})
 endif()
+
+add_subdirectory(tests)
