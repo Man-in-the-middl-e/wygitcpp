@@ -66,6 +66,9 @@ class GitObject {
 
 class GitCommit : public GitObject {
   public:
+    GitCommit(const CommitMessage& commitMessage);
+    GitCommit() = default;
+
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
 
@@ -101,6 +104,9 @@ class GitTree : public GitObject {
 
 class GitTag : public GitObject {
   public:
+    GitTag(const TagMessage& tagMessage);
+    GitTag() = default;
+
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
@@ -130,3 +136,4 @@ using GitTag = Git::GitTag;
 using GitBlob = Git::GitBlob;
 using ObjectData = Git::ObjectData;
 using GitTreeLeaf = Git::GitTreeLeaf;
+using TagMessage = Git::TagMessage;

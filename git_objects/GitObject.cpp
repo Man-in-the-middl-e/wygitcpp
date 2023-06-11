@@ -210,6 +210,11 @@ GitObject::resolveReference(const std::filesystem::path& referenceDir)
     }
 }
 
+GitCommit::GitCommit(const CommitMessage& commitMessage)
+    : m_commitMessage(commitMessage)
+{
+}
+
 ObjectData GitCommit::serialize()
 {
     std::ostringstream oss;
@@ -346,6 +351,8 @@ std::string GitTree::fileMode(const std::filesystem::directory_entry& entry,
         entry.path().string(), format);
 }
 
+GitTag::GitTag(const TagMessage& tagMessage) : m_tagMessage(tagMessage) {}
+
 ObjectData GitTag::serialize()
 {
     std::ostringstream oss;
@@ -364,7 +371,7 @@ ObjectData GitTag::serialize()
             << " " << m_tagMessage.gpgsig << std::endl;
     }
     oss << std::endl;
-    oss << m_tagMessage.message;
+    oss << m_tagMessage.message << std::endl;
 
     return ObjectData(oss.str());
 }
