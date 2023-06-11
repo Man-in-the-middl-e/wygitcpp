@@ -5,10 +5,17 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 find_package(Boost REQUIRED iostreams program_options)
+include(FetchContent)
+
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG a0b8a92
+)
+FetchContent_MakeAvailable(fmt)
 
 if(Boost_FOUND)
     include_directories(Project PUBLIC  ${Boost_INCLUDE_DIRS}) 
-    add_subdirectory(fmt)
     set(CMAKE_CXX_FLAGS "--std=c++2a")
 
     set(Objects_Sources git_objects/GitObject.cpp 
