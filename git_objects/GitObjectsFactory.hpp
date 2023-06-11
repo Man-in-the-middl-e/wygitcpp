@@ -16,7 +16,7 @@ class GitObjectFactory {
         requires std::is_base_of_v<GitObject, T>
     static std::unique_ptr<GitObject> createObject(const ObjectData& data)
     {
-        auto object = std::make_unique<T>(data);
+        auto object = std::make_unique<T>();
         object->deserialize(data);
         return object;
     }

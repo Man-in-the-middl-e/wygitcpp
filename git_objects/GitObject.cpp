@@ -210,8 +210,6 @@ GitObject::resolveReference(const std::filesystem::path& referenceDir)
     }
 }
 
-GitCommit::GitCommit(const ObjectData& data) : GitObject(data) {}
-
 ObjectData GitCommit::serialize()
 {
     std::ostringstream oss;
@@ -240,7 +238,8 @@ ObjectData GitCommit::serialize()
 void GitCommit::deserialize(const ObjectData& data)
 {
     auto commitMessage = GitObject::parseKeyValuesWithMessage(data.data());
-    // NOTE: use [], so if the element is not present empty string will be returned:)
+    // NOTE: use [], so if the element is not present empty string will be
+    // returned:)
     m_commitMessage = {.tree = commitMessage["tree"],
                        .parent = commitMessage["parent"],
                        .author = commitMessage["author"],
@@ -256,11 +255,7 @@ const CommitMessage& GitCommit::commitMessage() const
     return m_commitMessage;
 }
 
-GitTree::GitTree(const ObjectData& data) : GitObject(data) {}
-GitTree::GitTree(const std::vector<GitTreeLeaf>& leaves)
-    : GitObject({}), m_tree(leaves)
-{
-}
+GitTree::GitTree(const std::vector<GitTreeLeaf>& leaves) : m_tree(leaves) {}
 
 ObjectData GitTree::serialize()
 {
@@ -351,8 +346,6 @@ std::string GitTree::fileMode(const std::filesystem::directory_entry& entry,
         entry.path().string(), format);
 }
 
-GitTag::GitTag(const ObjectData& data) : GitObject(data) {}
-
 ObjectData GitTag::serialize()
 {
     std::ostringstream oss;
@@ -391,11 +384,9 @@ std::string GitTag::format() const { return "tag"; }
 
 const TagMessage& GitTag::tagMessage() const { return m_tagMessage; }
 
-GitBlob::GitBlob(const ObjectData& data) : GitObject(data) {}
+ObjectData GitBlob::serialize() { return m_blob; }
 
-ObjectData GitBlob::serialize() { return m_data; }
-
-void GitBlob::deserialize(const ObjectData& data) { m_data = data; }
+void GitBlob::deserialize(const ObjectData& data) { m_blob = data; }
 
 std::string GitBlob::format() const { return "blob"; }
 } // namespace Git

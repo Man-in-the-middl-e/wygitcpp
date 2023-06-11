@@ -58,30 +58,17 @@ class GitObject {
     static std::string resolveReference(const std::filesystem::path& reference);
 
   public:
-    // TODO: avoid unnecessary copies, as object data could be up to few dozens
-    // megabytes
-    // TODO: add new way of construction objects, mb don't use ObjectData at all
     virtual ObjectData serialize() = 0;
     virtual void deserialize(const ObjectData& data) = 0;
     virtual std::string format() const = 0;
-
     virtual ~GitObject();
-
-  protected:
-    GitObject(const ObjectData& data) : m_data(data) {}
-
-  protected:
-    ObjectData m_data;
 };
 
 class GitCommit : public GitObject {
   public:
-    // TODO: make constructors private, the only proper way to create objects is
-    // through factory
-    GitCommit(const ObjectData& data);
-
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
+
     std::string format() const override;
 
     const CommitMessage& commitMessage() const;
@@ -92,7 +79,7 @@ class GitCommit : public GitObject {
 
 class GitTree : public GitObject {
   public:
-    GitTree(const ObjectData& data);
+    GitTree() = default;
     GitTree(const std::vector<GitTreeLeaf>& leaves);
 
     ObjectData serialize() override;
@@ -114,8 +101,6 @@ class GitTree : public GitObject {
 
 class GitTag : public GitObject {
   public:
-    GitTag(const ObjectData& data);
-
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
@@ -128,13 +113,12 @@ class GitTag : public GitObject {
 
 class GitBlob : public GitObject {
   public:
-    GitBlob(const ObjectData& data);
-
     ObjectData serialize() override;
     void deserialize(const ObjectData& data) override;
     std::string format() const override;
 
-    const ObjectData& blob() const;
+  private:
+    ObjectData m_blob;
 };
 
 }; // namespace Git
