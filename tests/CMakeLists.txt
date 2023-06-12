@@ -12,8 +12,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 add_executable(wyagitTest wyagitTests.cpp)
-target_link_libraries(wyagitTest  GTest::gtest_main 
+target_link_libraries(wyagitTest  gtest
                                   ${CMAKE_BINARY_DIR}/lib${WYAGIT}.a
+                                  ${Boost_LIBRARIES}
                                   fmt)
 
 enable_testing()

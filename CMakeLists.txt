@@ -35,4 +35,5 @@ if(Boost_FOUND)
     target_link_libraries(wyagit ${WYAGIT})
 endif()
 
+enable_testing()
 add_subdirectory(tests)
