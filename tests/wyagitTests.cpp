@@ -94,6 +94,52 @@ TEST_F(GitCommandsTest, HashFileBlob)
     EXPECT_EQ(fileHash.data(), fileHashFromFS.data());
 }
 
+TEST_F(GitCommandsTest, GitCommitTest)
+{
+    auto fileOne = "file1.txt";
+    Utilities::writeToFile(fileOne, "one");
+    std::string commitTextMessage = "test commit";
+    GitCommands::commit(commitTextMessage);
+
+    try {
+        auto commitHash = GitObject::findObject("HEAD", "commit");
+        auto commitObject = GitObjectFactory::read(commitHash);
+
+        ASSERT_EQ(commitObject->format(), "commit");
+        auto commitMessage =
+            static_cast<GitCommit*>(commitObject.get())->commitMessage();
+        ASSERT_EQ(commitMessage.message, commitTextMessage);
+    }
+    catch (std::runtime_error) {
+        FAIL() << "Commit wasn't found\n";
+    }
+}
+
+TEST_F(GitCommandsTest, GitCheckout)
+{
+    auto fileOne = "file1.txt";
+    std::string firstCommitFileContent = "first commit file content";
+    Utilities::writeToFile(fileOne, firstCommitFileContent);
+    GitCommands::commit("inital commit");
+    auto initialCommitHash = GitObject::findObject("HEAD", "commit");
+
+    std::string secondCommitFileContent = "second commit file content";
+    Utilities::writeToFile(fileOne, secondCommitFileContent);
+    GitCommands::commit("change file1.txt");
+
+    std::string checkoutDir = "checkoutDir";
+    GitCommands::checkout(initialCommitHash, checkoutDir);
+
+    auto initalCommitFileContent = Utilities::readFile(std::filesystem::path(checkoutDir) / fileOne);
+    ASSERT_EQ(initalCommitFileContent, firstCommitFileContent);
+
+    auto currentCommitFileContent = Utilities::readFile(fileOne);
+    ASSERT_EQ(currentCommitFileContent, secondCommitFileContent);
+}
+
+
+
+// TODO: move to separate file
 TEST(GitUtility, FileMode)
 {
     using namespace std::filesystem;
@@ -147,7 +193,7 @@ TEST(GitUtility, FileMode)
         }
     }
 
-     // symlink
+    // symlink
     {
         path target = "target";
         path link = "target_lk";
