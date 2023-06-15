@@ -137,3 +137,4 @@ using GitBlob = Git::GitBlob;
 using ObjectData = Git::ObjectData;
 using GitTreeLeaf = Git::GitTreeLeaf;
 using TagMessage = Git::TagMessage;
+using CommitMessage = Git::CommitMessage;

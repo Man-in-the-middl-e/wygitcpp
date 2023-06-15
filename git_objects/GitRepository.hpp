@@ -16,6 +16,7 @@ class GitRepository {
     static GitRepository initialize(const Fpath& path);
     static GitRepository create(const Fpath& path);
     static GitRepository findRoot(const Fpath& path = ".");
+    static std::string currentBranch();
 
   public:
     template <class... T>

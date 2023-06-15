@@ -44,11 +44,11 @@ void displayLog(const GitHash& hash)
     }
 
     auto author = commitMessage.author.substr(0, authorEnds + 1);
-    auto date =
-        Utilities::decodeDateIn(commitMessage.author.substr(authorEnds + 2));
+    // auto date =
+    // Utilities::decodeDateIn(commitMessage.author.substr(authorEnds + 2));
     std::cout << "commit: " << hash.data().data() << std::endl;
     std::cout << "Author: " << author << std::endl;
-    std::cout << "Date:   " << date << std::endl;
+    // std::cout << "Date:   " << date << std::endl;
     std::cout << "\n\t" << commitMessage.message << std::endl;
 
     if (commitMessage.parent.empty()) {
@@ -217,13 +217,43 @@ GitHash createTree(const std::filesystem::path& dirPath)
 
 void commit(const std::string& message = "")
 {
-    auto workTree = GitRepository::findRoot().workTree();
-    if (workTree.empty()) {
+    auto rootRepo = GitRepository::findRoot();
+    auto numberOfFiles =
+        std::distance(std::filesystem::directory_iterator(rootRepo.workTree()),
+                      std::filesystem::directory_iterator{});
+    if (numberOfFiles == 1 &&
+        std::filesystem::exists(rootRepo.gitDir())) {
         std::cout << "There is nothing to commit" << std::endl;
+        return;
     }
-    else {
-        std::cout << "Create tree object: " << createTree(workTree)
-                  << std::endl;
-    }
+
+    auto getParent = [&]() {
+        try {
+            auto currentHead = GitObject::resolveReference(
+                GitRepository::repoPath(rootRepo, "HEAD"));
+            return currentHead;
+        }
+        catch (std::runtime_error error) {
+            return std::string("");
+        }
+    };
+
+    auto commitTree = createTree(rootRepo.workTree());
+    CommitMessage commitMessage{.tree = commitTree.data(),
+                                .parent = getParent(),
+                                // TODO: add date to the author field
+                                .author = "Joe Doe <joedoe@email.com>",
+                                .committer = "joe Doe <joedoe@email.com>",
+                                .gpgsig = "",
+                                .message = message};
+
+    GitCommit commitObject(commitMessage);
+    auto commitHash = GitObject::write(&commitObject);
+    auto currentBranchHead = GitRepository::repoPath(
+        rootRepo, "refs", "heads", GitRepository::currentBranch());
+    Utilities::writeToFile(currentBranchHead, commitHash.data());
+    std::cout << fmt::format("  [{} {}] committing\n",
+                             GitRepository::currentBranch(),
+                             commitHash.data().substr(0, 7));
 }
-};
+}; // namespace GitCommands

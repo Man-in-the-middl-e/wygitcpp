@@ -34,8 +34,8 @@ GitRepository GitRepository::findRoot(const GitRepository::Fpath& path)
 
     auto parentDir = currentDir.parent_path();
     if (parentDir == currentDir) {
-        GENERATE_EXCEPTION("Couldn't find git directory {}",
-                           parentDir.string());
+        GENERATE_EXCEPTION("Couldn't find .git directory {}",
+                           Fs::absolute(parentDir).string());
     }
     return findRoot(parentDir);
 }
@@ -89,6 +89,11 @@ GitRepository GitRepository::initialize(const Fpath& path)
 GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
     : m_workTree(workTree), m_gitDir(gitDir)
 {
+}
+
+std::string GitRepository::currentBranch() 
+{
+    return "master";
 }
 
 const GitRepository::Fpath& GitRepository::gitDir() const { return m_gitDir; }

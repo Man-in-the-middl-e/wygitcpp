@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
             GitCommands::listFiles();
         }
         else if (vm.count("commit")) {
-            GitCommands::commit();
+            GitCommands::commit("Auto generated commit message");
         }
     }
     catch (std::runtime_error myex) {
