@@ -5,6 +5,8 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include "GitObject.hpp"
+
 namespace Git {
 namespace ConfigurationParser = boost::property_tree;
 
@@ -91,11 +93,24 @@ GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
 {
 }
 
-std::string GitRepository::currentBranch() 
+std::string GitRepository::currentBranch() { return "master"; }
+
+void GitRepository::setHEAD(const GitHash& commitHash)
 {
-    return "master";
+    Utilities::writeToFile(
+        GitRepository::repoPath(GitRepository::findRoot(), "HEAD"),
+        commitHash.data());
+}
+
+GitHash GitRepository::HEAD()
+{
+    return GitHash(GitObject::resolveReference(
+        GitRepository::repoPath(GitRepository::findRoot(), "HEAD")));
 }
 
 const GitRepository::Fpath& GitRepository::gitDir() const { return m_gitDir; }
-const GitRepository::Fpath& GitRepository::workTree() const {return m_workTree; }
+const GitRepository::Fpath& GitRepository::workTree() const
+{
+    return m_workTree;
+}
 }; // namespace Git

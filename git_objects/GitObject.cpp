@@ -14,9 +14,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
         return {};
     }
     if (name == "HEAD") {
-        // TODO: smells very badly, way too many conversions
-        return {GitHash(GitObject::resolveReference(
-            GitRepository::repoFile(GitRepository::findRoot(), "HEAD")))};
+        return {GitRepository::HEAD()};
     }
 
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");

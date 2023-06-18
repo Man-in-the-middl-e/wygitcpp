@@ -91,7 +91,8 @@ int main(int argc, char* argv[])
                 vm["hash-file"].as<std::vector<std::string>>();
             if (hashFileArguments.size() == 2) {
                 // TODO: make write optional argument
-                GitCommands::hashFile(hashFileArguments[0], hashFileArguments[1], true);
+                GitCommands::hashFile(hashFileArguments[0],
+                                      hashFileArguments[1], true);
             }
         }
         else if (vm.count("log")) {
@@ -109,11 +110,9 @@ int main(int argc, char* argv[])
         else if (vm.count("checkout")) {
             auto checkoutArguments =
                 vm["checkout"].as<std::vector<std::string>>();
-            if (checkoutArguments.size() == 2) {
+            if (checkoutArguments.size() == 1) {
                 auto hash = GitObject::findObject(checkoutArguments[0]);
-                auto checkoutDir =
-                    std::filesystem::absolute(checkoutArguments[1]);
-                GitCommands::checkout(hash, checkoutDir);
+                GitCommands::checkout(hash);
             }
         }
         else if (vm.count("show-ref")) {
@@ -128,7 +127,8 @@ int main(int argc, char* argv[])
             auto tagsPath = GitRepository::repoFile(GitRepository::findRoot(),
                                                     "refs", "tags");
             if (!tagsPath.empty()) {
-                for (const auto& [_, tags] : GitCommands::showReferences(tagsPath)) {
+                for (const auto& [_, tags] :
+                     GitCommands::showReferences(tagsPath)) {
                     for (const auto& tag : tags) {
                         std::cout << tag.filename().string() << std::endl;
                     }
@@ -142,7 +142,8 @@ int main(int argc, char* argv[])
                 auto objectHash = GitObject::findObject(tagArguments[1]);
                 bool createAssociativeTag =
                     tagArguments.size() == 3 && tagArguments[2] == "a";
-                GitCommands::createTag(tagName, objectHash, createAssociativeTag);
+                GitCommands::createTag(tagName, objectHash,
+                                       createAssociativeTag);
             }
         }
         else if (vm.count("rev-parse")) {
@@ -164,5 +165,4 @@ int main(int argc, char* argv[])
     catch (std::runtime_error myex) {
         std::cout << myex.what() << std::endl;
     }
-    return 0;
 };

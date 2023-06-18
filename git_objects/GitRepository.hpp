@@ -7,6 +7,8 @@
 namespace Git {
 namespace Fs = std::filesystem;
 
+class GitHash;
+
 class GitRepository {
   public:
     enum class CreateDir { YES = 0, NO = 1 };
@@ -17,6 +19,9 @@ class GitRepository {
     static GitRepository create(const Fpath& path);
     static GitRepository findRoot(const Fpath& path = ".");
     static std::string currentBranch();
+
+    static void setHEAD(const GitHash& commitHash);
+    static GitHash HEAD();
 
   public:
     template <class... T>

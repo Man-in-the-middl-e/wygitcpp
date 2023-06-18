@@ -121,23 +121,29 @@ TEST_F(GitCommandsTest, GitCheckout)
     std::string firstCommitFileContent = "first commit file content";
     Utilities::writeToFile(fileOne, firstCommitFileContent);
     GitCommands::commit("inital commit");
-    auto initialCommitHash = GitObject::findObject("HEAD", "commit");
+    auto firstCommit = GitRepository::HEAD();
 
     std::string secondCommitFileContent = "second commit file content";
     Utilities::writeToFile(fileOne, secondCommitFileContent);
     GitCommands::commit("change file1.txt");
+    auto secondCommit = GitRepository::HEAD();
 
-    std::string checkoutDir = "checkoutDir";
-    GitCommands::checkout(initialCommitHash, checkoutDir);
+    {
+        GitCommands::checkout(firstCommit);
+        ASSERT_EQ(firstCommit.data(), GitRepository::HEAD().data());
+        auto currentFileContent =
+            Utilities::readFile(std::filesystem::path(fileOne));
+        ASSERT_EQ(currentFileContent, firstCommitFileContent);
+    }
 
-    auto initalCommitFileContent = Utilities::readFile(std::filesystem::path(checkoutDir) / fileOne);
-    ASSERT_EQ(initalCommitFileContent, firstCommitFileContent);
-
-    auto currentCommitFileContent = Utilities::readFile(fileOne);
-    ASSERT_EQ(currentCommitFileContent, secondCommitFileContent);
+    {
+        GitCommands::checkout(secondCommit);
+        ASSERT_EQ(secondCommit.data(), GitRepository::HEAD().data());
+        auto currentFileContent =
+            Utilities::readFile(std::filesystem::path(fileOne));
+        ASSERT_EQ(currentFileContent, secondCommitFileContent);
+    }
 }
-
-
 
 // TODO: move to separate file
 TEST(GitUtility, FileMode)

@@ -104,36 +104,40 @@ void treeCheckout(const GitObject* object,
     }
 }
 
-void checkout(const GitHash& commit,
-              const std::filesystem::path& checkoutDirectory)
+void cleanDirectory()
 {
+    std::vector<std::filesystem::path> entriesToRemove;
+    for (const auto dirEntry : std::filesystem::directory_iterator(
+             GitRepository::findRoot().workTree())) {
+        auto dirEntryPath = dirEntry.path();
+        if (dirEntry.is_directory() &&
+            dirEntryPath.string().find("/.git") != std::string::npos) {
+            continue;
+        }
+        entriesToRemove.push_back(dirEntryPath);
+    }
+    for (const auto& entry : entriesToRemove) {
+        std::filesystem::remove_all(entry);
+    }
+}
+
+void checkout(const GitHash& commit)
+{
+    cleanDirectory();
     auto gitObject =
         GitObjectFactory::read(GitObject::findObject(commit.data()));
+    auto workTree = GitRepository::findRoot().workTree();
 
-    if (std::filesystem::exists(checkoutDirectory)) {
-        if (!std::filesystem::is_directory(checkoutDirectory)) {
-            GENERATE_EXCEPTION("{}, is not a directory!",
-                               checkoutDirectory.string());
-        }
-        else if (!std::filesystem::is_empty(checkoutDirectory)) {
-            GENERATE_EXCEPTION(
-                "{}, is not an empty directory. Currently checkout only works "
-                "with the empty directories",
-                checkoutDirectory.string());
-        }
-    }
-    else {
-        std::filesystem::create_directories(checkoutDirectory);
-    }
+    GitRepository::setHEAD(commit);
 
     if (gitObject->format() == "commit") {
         auto gitCommit = static_cast<GitCommit*>(gitObject.get());
         auto treeHash = GitHash(gitCommit->commitMessage().tree);
         auto tree = GitObjectFactory::read(treeHash);
-        treeCheckout(tree.get(), checkoutDirectory);
+        treeCheckout(tree.get(), workTree);
     }
     else if (gitObject->format() == "tree") {
-        treeCheckout(gitObject.get(), checkoutDirectory);
+        treeCheckout(gitObject.get(), workTree);
     }
 }
 
@@ -221,8 +225,7 @@ void commit(const std::string& message = "")
     auto numberOfFiles =
         std::distance(std::filesystem::directory_iterator(rootRepo.workTree()),
                       std::filesystem::directory_iterator{});
-    if (numberOfFiles == 1 &&
-        std::filesystem::exists(rootRepo.gitDir())) {
+    if (numberOfFiles == 1 && std::filesystem::exists(rootRepo.gitDir())) {
         std::cout << "There is nothing to commit" << std::endl;
         return;
     }
