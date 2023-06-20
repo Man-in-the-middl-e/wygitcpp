@@ -14,7 +14,8 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
         return {};
     }
     if (name == "HEAD") {
-        return {GitRepository::HEAD()};
+        return {GitHash(
+            GitObject::resolveReference(GitRepository::pathToHead()))};
     }
 
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");
@@ -45,7 +46,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
     }
     else {
         // if name is not hash, than it's tag or branch
-        auto branchesPath = GitRepository::repoPath(repo, "branches");
+        auto branchesPath = GitRepository::repoPath(repo, "refs", "heads");
         for (std::filesystem::directory_entry dirEntry :
              std::filesystem::directory_iterator{branchesPath}) {
             if (dirEntry.path().filename().string() == name) {
@@ -191,13 +192,14 @@ GitObject::parseKeyValuesWithMessage(const std::string& data)
 }
 
 std::string
-GitObject::resolveReference(const std::filesystem::path& referenceDir)
+GitObject::resolveReference(const std::filesystem::path& referenceDir,
+                            bool dereference)
 {
     auto referenceContent = Utilities::readFile(referenceDir);
     if (referenceContent.back() == '\n') {
         referenceContent.erase(referenceContent.end() - 1);
     }
-    if (referenceContent.starts_with("ref: ")) {
+    if (referenceContent.starts_with("ref: ") && dereference) {
         auto indirectReference = referenceContent.substr(5);
         auto fullPathToIndirectReference = GitRepository::repoFile(
             GitRepository::findRoot(), indirectReference);

@@ -6,6 +6,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "GitObject.hpp"
+#include <iostream>
 
 namespace Git {
 namespace ConfigurationParser = boost::property_tree;
@@ -93,19 +94,41 @@ GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
 {
 }
 
-std::string GitRepository::currentBranch() { return "master"; }
-
-void GitRepository::setHEAD(const GitHash& commitHash)
+GitRepository::Fpath GitRepository::pathToHead()
 {
-    Utilities::writeToFile(
-        GitRepository::repoPath(GitRepository::findRoot(), "HEAD"),
-        commitHash.data());
+    static Fpath pathToHead = repoPath(findRoot(), "HEAD");
+    return pathToHead;
+}
+void GitRepository::commitToBranch(const GitHash& commitHash)
+{
+    auto currentHead = HEAD(false);
+    if (currentHead.starts_with("ref: ")) {
+        auto pathToBranch = currentHead.substr(currentHead.find(' ') + 1);
+        Utilities::writeToFile(repoPath(findRoot(), pathToBranch),
+                               commitHash.data());
+    }
+    else {
+        std::cout << "This commit doesn't belong to any branch\n";
+        setHEAD(commitHash);
+    }
 }
 
-GitHash GitRepository::HEAD()
+void GitRepository::setHEAD(const std::string& value)
 {
-    return GitHash(GitObject::resolveReference(
-        GitRepository::repoPath(GitRepository::findRoot(), "HEAD")));
+
+    Utilities::writeToFile(GitRepository::pathToHead(),
+                           fmt::format("ref: refs/heads/{}\n", value));
+}
+
+void GitRepository::setHEAD(const GitHash& hash)
+{
+
+    Utilities::writeToFile(GitRepository::pathToHead(), hash.data());
+}
+
+std::string GitRepository::HEAD(bool dereference)
+{
+    return GitObject::resolveReference(pathToHead(), dereference);
 }
 
 const GitRepository::Fpath& GitRepository::gitDir() const { return m_gitDir; }

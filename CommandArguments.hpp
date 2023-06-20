@@ -121,14 +121,24 @@ void cleanDirectory()
     }
 }
 
-void checkout(const GitHash& commit)
+void checkout(const std::string& branchOrCommit)
 {
     cleanDirectory();
+    auto commit = GitObject::findObject(branchOrCommit);
     auto gitObject =
         GitObjectFactory::read(GitObject::findObject(commit.data()));
     auto workTree = GitRepository::findRoot().workTree();
 
-    GitRepository::setHEAD(commit);
+    // if is a branch
+    if (auto pathToBranch = GitRepository::repoFile(
+            GitRepository::findRoot(), "refs", "heads", branchOrCommit);
+        std::filesystem::exists(pathToBranch)) {
+        std::cout << fmt::format("Switched to branch: `{}`\n", branchOrCommit);
+        GitRepository::setHEAD(branchOrCommit);
+    }
+    else {
+        GitRepository::setHEAD(commit);
+    }
 
     if (gitObject->format() == "commit") {
         auto gitCommit = static_cast<GitCommit*>(gitObject.get());
@@ -232,9 +242,7 @@ void commit(const std::string& message = "")
 
     auto getParent = [&]() {
         try {
-            auto currentHead = GitObject::resolveReference(
-                GitRepository::repoPath(rootRepo, "HEAD"));
-            return currentHead;
+            return GitRepository::HEAD(true);
         }
         catch (std::runtime_error error) {
             return std::string("");
@@ -252,11 +260,20 @@ void commit(const std::string& message = "")
 
     GitCommit commitObject(commitMessage);
     auto commitHash = GitObject::write(&commitObject);
-    auto currentBranchHead = GitRepository::repoPath(
-        rootRepo, "refs", "heads", GitRepository::currentBranch());
-    Utilities::writeToFile(currentBranchHead, commitHash.data());
-    std::cout << fmt::format("  [{} {}] committing\n",
-                             GitRepository::currentBranch(),
-                             commitHash.data().substr(0, 7));
+    GitRepository::commitToBranch(commitHash);
+
+    if (auto head = GitRepository::HEAD(); head.find("refs/") != std::string::npos) {
+        std::cout << fmt::format("  [{} {}] committing\n",
+                                 head.substr(head.find_last_of("/") + 1),
+                                 commitHash.data().substr(0, 7));
+    }
+}
+
+void createBranch(const std::string& branchName)
+{
+    auto currentCommit = GitRepository::HEAD(true);
+    Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
+                                                   "refs", "heads", branchName),
+                           currentCommit.data());
 }
 }; // namespace GitCommands

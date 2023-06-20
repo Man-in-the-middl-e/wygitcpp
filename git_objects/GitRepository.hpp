@@ -1,14 +1,16 @@
 #pragma once
 
+#include <assert.h>
 #include <fstream>
+#include <variant>
 
 #include "../utilities/Common.hpp"
+#include "GitObject.hpp"
 
 namespace Git {
 namespace Fs = std::filesystem;
 
 class GitHash;
-
 class GitRepository {
   public:
     enum class CreateDir { YES = 0, NO = 1 };
@@ -18,10 +20,13 @@ class GitRepository {
     static GitRepository initialize(const Fpath& path);
     static GitRepository create(const Fpath& path);
     static GitRepository findRoot(const Fpath& path = ".");
-    static std::string currentBranch();
 
-    static void setHEAD(const GitHash& commitHash);
-    static GitHash HEAD();
+    static void setHEAD(const std::string& value);
+    static void setHEAD(const GitHash& hash);
+    static void commitToBranch(const GitHash& commitHash);
+
+    static std::string HEAD(bool dereference = true);
+    static Fpath pathToHead();
 
   public:
     template <class... T>

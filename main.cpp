@@ -62,6 +62,10 @@ int main(int argc, char* argv[])
             po::value<std::string>()->implicit_value("."),
             "Create commit"
         )
+        ("branch",
+            po::value<std::string>(),
+            "Create branch"
+        );
         ;
     // clang-format on
 
@@ -111,8 +115,7 @@ int main(int argc, char* argv[])
             auto checkoutArguments =
                 vm["checkout"].as<std::vector<std::string>>();
             if (checkoutArguments.size() == 1) {
-                auto hash = GitObject::findObject(checkoutArguments[0]);
-                GitCommands::checkout(hash);
+                GitCommands::checkout(checkoutArguments[0]);
             }
         }
         else if (vm.count("show-ref")) {
@@ -160,6 +163,9 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("commit")) {
             GitCommands::commit("Auto generated commit message");
+        } else if (vm.count("branch")) {
+            auto branchName = vm["branch"].as<std::string>();
+            GitCommands::createBranch(branchName);
         }
     }
     catch (std::runtime_error myex) {

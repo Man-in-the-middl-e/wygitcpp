@@ -55,7 +55,7 @@ class GitObject {
     static KeyValuesWithMessage
     parseKeyValuesWithMessage(const std::string& data);
 
-    static std::string resolveReference(const std::filesystem::path& reference);
+    static std::string resolveReference(const std::filesystem::path& reference, bool dereference = true);
 
   public:
     virtual ObjectData serialize() = 0;
