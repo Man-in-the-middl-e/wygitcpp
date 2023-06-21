@@ -130,7 +130,7 @@ TEST_F(GitCommandsTest, GitCheckout)
 
     {
         GitCommands::checkout(firstCommit);
-        ASSERT_EQ(firstCommit.data(), GitRepository::HEAD().data());
+        ASSERT_EQ(firstCommit, GitRepository::HEAD());
         auto currentFileContent =
             Utilities::readFile(std::filesystem::path(fileOne));
         ASSERT_EQ(currentFileContent, firstCommitFileContent);
@@ -138,11 +138,36 @@ TEST_F(GitCommandsTest, GitCheckout)
 
     {
         GitCommands::checkout(secondCommit);
-        ASSERT_EQ(secondCommit.data(), GitRepository::HEAD().data());
+        ASSERT_EQ(secondCommit, GitRepository::HEAD());
         auto currentFileContent =
             Utilities::readFile(std::filesystem::path(fileOne));
         ASSERT_EQ(currentFileContent, secondCommitFileContent);
     }
+}
+
+TEST_F(GitCommandsTest, GitCreateBranch)
+{
+    std::string fileOne = "file1.txt";
+    std::string firstCommitFileOneContent = "first commit file content";
+    Utilities::writeToFile("file1.txt", firstCommitFileOneContent);
+    GitCommands::commit("inital commit");
+
+    auto getBranch = [&](const std::string& head) {
+        return head.substr(head.find_last_of('/') + 1);
+    };
+    ASSERT_EQ("master", getBranch(GitRepository::HEAD(HeadType::REF)));
+
+    auto testBranch = "test";
+    GitCommands::createBranch(testBranch);
+    GitCommands::checkout(testBranch);
+    ASSERT_EQ("test", getBranch(GitRepository::HEAD(HeadType::REF)));
+
+    Utilities::writeToFile("file1.txt", "test branch content");
+    GitCommands::commit("committing to the branch");
+    GitCommands::checkout("master");
+    
+    auto fileOneContent = Utilities::readFile(fileOne);
+    ASSERT_EQ(fileOneContent, firstCommitFileOneContent);
 }
 
 // TODO: move to separate file

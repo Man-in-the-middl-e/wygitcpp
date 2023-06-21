@@ -101,7 +101,7 @@ GitRepository::Fpath GitRepository::pathToHead()
 }
 void GitRepository::commitToBranch(const GitHash& commitHash)
 {
-    auto currentHead = HEAD(false);
+    auto currentHead = HEAD(HeadType::REF);
     if (currentHead.starts_with("ref: ")) {
         auto pathToBranch = currentHead.substr(currentHead.find(' ') + 1);
         Utilities::writeToFile(repoPath(findRoot(), pathToBranch),
@@ -126,9 +126,9 @@ void GitRepository::setHEAD(const GitHash& hash)
     Utilities::writeToFile(GitRepository::pathToHead(), hash.data());
 }
 
-std::string GitRepository::HEAD(bool dereference)
+std::string GitRepository::HEAD(HeadType headType)
 {
-    return GitObject::resolveReference(pathToHead(), dereference);
+    return GitObject::resolveReference(pathToHead(), headType == HeadType::HASH);
 }
 
 const GitRepository::Fpath& GitRepository::gitDir() const { return m_gitDir; }

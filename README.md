@@ -9,4 +9,4 @@ Also, this tutorial doesn't contain implementation of major git features, so the
 - [ ] Implement staging area(git add, git status).
 - [ ] Implement merge.
 - [ ] Implement diff.
-- [ ] Implement branches.
+- [x] Implement branches.

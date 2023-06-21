@@ -10,6 +10,8 @@
 namespace Git {
 namespace Fs = std::filesystem;
 
+enum class HeadType : bool { REF, HASH };
+
 class GitHash;
 class GitRepository {
   public:
@@ -25,7 +27,7 @@ class GitRepository {
     static void setHEAD(const GitHash& hash);
     static void commitToBranch(const GitHash& commitHash);
 
-    static std::string HEAD(bool dereference = true);
+    static std::string HEAD(HeadType type = HeadType::HASH);
     static Fpath pathToHead();
 
   public:
@@ -96,3 +98,4 @@ class GitRepository {
 }; // namespace Git
 
 using GitRepository = Git::GitRepository;
+using HeadType = Git::HeadType;

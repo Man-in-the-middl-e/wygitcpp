@@ -242,7 +242,7 @@ void commit(const std::string& message = "")
 
     auto getParent = [&]() {
         try {
-            return GitRepository::HEAD(true);
+            return GitRepository::HEAD();
         }
         catch (std::runtime_error error) {
             return std::string("");
@@ -271,7 +271,7 @@ void commit(const std::string& message = "")
 
 void createBranch(const std::string& branchName)
 {
-    auto currentCommit = GitRepository::HEAD(true);
+    auto currentCommit = GitRepository::HEAD();
     Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
                                                    "refs", "heads", branchName),
                            currentCommit.data());
