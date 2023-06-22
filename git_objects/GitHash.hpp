@@ -36,6 +36,7 @@ class GitHash {
 };
 
 std::ostream& operator<<(std::ostream& stream, GitHash hash);
+bool operator==(const GitHash& lhs, const GitHash& rhs);
 }; // namespace Git
 
 using GitHash = Git::GitHash;

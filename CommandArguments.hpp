@@ -46,7 +46,7 @@ void displayLog(const GitHash& hash)
     auto author = commitMessage.author.substr(0, authorEnds + 1);
     // auto date =
     // Utilities::decodeDateIn(commitMessage.author.substr(authorEnds + 2));
-    std::cout << "commit: " << hash.data().data() << std::endl;
+    std::cout << "commit: " << hash << std::endl;
     std::cout << "Author: " << author << std::endl;
     // std::cout << "Date:   " << date << std::endl;
     std::cout << "\n\t" << commitMessage.message << std::endl;
@@ -169,7 +169,7 @@ void creatReference(const std::string& name, const GitHash& hash)
 {
     auto repo = GitRepository::findRoot();
     auto referencePath = GitRepository::repoFile(repo, "refs", "tags", name);
-    Utilities::writeToFile(referencePath, hash.data() + "\n");
+    Utilities::writeToFile(referencePath, hash);
 }
 
 void createTag(const std::string& tagName, const GitHash& objectHash,
@@ -274,6 +274,6 @@ void createBranch(const std::string& branchName)
     auto currentCommit = GitRepository::HEAD();
     Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
                                                    "refs", "heads", branchName),
-                           currentCommit.data());
+                           currentCommit);
 }
 }; // namespace GitCommands

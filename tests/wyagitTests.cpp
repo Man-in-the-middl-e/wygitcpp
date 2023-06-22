@@ -91,7 +91,7 @@ TEST_F(GitCommandsTest, HashFileBlob)
     Utilities::writeToFile(textFile, "text");
     auto fileHash = GitCommands::hashFile(textFile, "blob");
     auto fileHashFromFS = GitObject::findObject(fileHash.data(), "blob");
-    EXPECT_EQ(fileHash.data(), fileHashFromFS.data());
+    EXPECT_EQ(fileHash, fileHashFromFS);
 }
 
 TEST_F(GitCommandsTest, GitCommitTest)

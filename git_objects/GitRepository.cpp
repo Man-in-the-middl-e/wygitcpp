@@ -105,7 +105,7 @@ void GitRepository::commitToBranch(const GitHash& commitHash)
     if (currentHead.starts_with("ref: ")) {
         auto pathToBranch = currentHead.substr(currentHead.find(' ') + 1);
         Utilities::writeToFile(repoPath(findRoot(), pathToBranch),
-                               commitHash.data());
+                               commitHash);
     }
     else {
         std::cout << "This commit doesn't belong to any branch\n";
@@ -123,7 +123,7 @@ void GitRepository::setHEAD(const std::string& value)
 void GitRepository::setHEAD(const GitHash& hash)
 {
 
-    Utilities::writeToFile(GitRepository::pathToHead(), hash.data());
+    Utilities::writeToFile(GitRepository::pathToHead(), hash);
 }
 
 std::string GitRepository::HEAD(HeadType headType)

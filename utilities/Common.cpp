@@ -12,13 +12,24 @@ std::string readFile(const std::filesystem::path& filePath)
     }
     std::ostringstream data;
     data << ifs.rdbuf();
-    return data.str();
+    // NOTE: probably there is more efficient way to do this
+    auto strData = data.str();
+    if (strData.back() == '\n') {
+        strData.pop_back();
+    }
+    return strData;
 }
 
 void writeToFile(const std::filesystem::path& filePath, const std::string& data)
 {
     std::ofstream ofs(filePath.string(), std::ios::out | std::ios::binary);
     ofs.write(data.c_str(), data.size());
+    ofs.put('\n');
+}
+
+void writeToFile(const std::filesystem::path& filePath, const GitHash& hash)
+{
+    writeToFile(filePath, hash.data());
 }
 
 std::string convertTimeSinceEpoch(const std::string& timeSinceEpoch)
@@ -26,7 +37,7 @@ std::string convertTimeSinceEpoch(const std::string& timeSinceEpoch)
     time_t datetime = std::stol(timeSinceEpoch);
     auto humanReadableTime = std::string(ctime(&datetime));
     // remove `\n` at the end of the string
-    humanReadableTime.erase(humanReadableTime.end() - 1);
+    humanReadableTime.pop_back();
     return humanReadableTime;
 }
 

@@ -48,4 +48,8 @@ std::ostream& operator<<(std::ostream& stream, GitHash hash)
     stream << hash.data();
     return stream;
 }
+bool operator==(const GitHash& lhs, const GitHash& rhs)
+{
+    return lhs.data() == rhs.data();
+}
 }; // namespace Git
