@@ -7,15 +7,14 @@
 #include <regex>
 
 namespace {
-std::vector<GitHash> resolveObject(const GitRepository& repo,
-                                   const std::string& name)
+std::vector<GitHash> resolveObject(const std::string& name)
 {
     if (name.empty()) {
         return {};
     }
     if (name == "HEAD") {
-        return {GitHash(
-            GitObject::resolveReference(GitRepository::pathToHead()))};
+        return {
+            GitHash(GitObject::resolveReference(GitRepository::pathToHead()))};
     }
 
     std::regex shaSignature("[0-9A-Fa-f]{4,40}");
@@ -30,7 +29,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
         }
 
         auto hashPrefix = name.substr(0, 2);
-        auto objectPath = GitRepository::repoDir(repo, "objects", hashPrefix);
+        auto objectPath = GitRepository::repoDir("objects", hashPrefix);
 
         if (!objectPath.empty()) {
             auto beginningOfHash = name.substr(2);
@@ -46,7 +45,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
     }
     else {
         // if name is not hash, than it's tag or branch
-        auto branchesPath = GitRepository::repoPath(repo, "refs", "heads");
+        auto branchesPath = GitRepository::repoDir("refs", "heads");
         for (std::filesystem::directory_entry dirEntry :
              std::filesystem::directory_iterator{branchesPath}) {
             if (dirEntry.path().filename().string() == name) {
@@ -55,7 +54,7 @@ std::vector<GitHash> resolveObject(const GitRepository& repo,
             }
         }
 
-        auto tagsPath = GitRepository::repoPath(repo, "refs", "tags");
+        auto tagsPath = GitRepository::repoDir("refs", "tags");
         if (candidates.empty()) {
             for (std::filesystem::directory_entry dirEntry :
                  std::filesystem::directory_iterator{tagsPath}) {
@@ -84,8 +83,8 @@ GitHash GitObject::write(GitObject* gitObject, bool actuallyWrite)
     auto fileHash = SHA1::computeHash(fileContent);
     if (actuallyWrite) {
         auto objectFile = GitRepository::repoFile(
-            GitRepository::findRoot(), GitRepository::CreateDir::YES, "objects",
-            fileHash.directoryName(), fileHash.fileName());
+            GitRepository::CreateDir::YES, "objects", fileHash.directoryName(),
+            fileHash.fileName());
         Zlib::compress(objectFile, fileContent);
     }
     return fileHash;
@@ -93,8 +92,7 @@ GitHash GitObject::write(GitObject* gitObject, bool actuallyWrite)
 
 GitHash GitObject::findObject(const std::string& name, const std::string& fmt)
 {
-    auto repo = GitRepository::findRoot();
-    auto shas = resolveObject(repo, name);
+    auto shas = resolveObject(name);
     if (shas.empty()) {
         GENERATE_EXCEPTION("No such reference: {}", name);
     }
@@ -201,8 +199,8 @@ GitObject::resolveReference(const std::filesystem::path& referenceDir,
     }
     if (referenceContent.starts_with("ref: ") && dereference) {
         auto indirectReference = referenceContent.substr(5);
-        auto fullPathToIndirectReference = GitRepository::repoFile(
-            GitRepository::findRoot(), indirectReference);
+        auto fullPathToIndirectReference =
+            GitRepository::repoFile(indirectReference);
         return resolveReference(fullPathToIndirectReference);
     }
     else {

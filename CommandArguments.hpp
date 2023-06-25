@@ -130,8 +130,8 @@ void checkout(const std::string& branchOrCommit)
     auto workTree = GitRepository::findRoot().workTree();
 
     // if is a branch
-    if (auto pathToBranch = GitRepository::repoFile(
-            GitRepository::findRoot(), "refs", "heads", branchOrCommit);
+    if (auto pathToBranch =
+            GitRepository::repoFile("refs", "heads", branchOrCommit);
         std::filesystem::exists(pathToBranch)) {
         std::cout << fmt::format("Switched to branch: `{}`\n", branchOrCommit);
         GitRepository::setHEAD(branchOrCommit);
@@ -167,8 +167,7 @@ showReferences(const std::filesystem::path& refDir)
 
 void creatReference(const std::string& name, const GitHash& hash)
 {
-    auto repo = GitRepository::findRoot();
-    auto referencePath = GitRepository::repoFile(repo, "refs", "tags", name);
+    auto referencePath = GitRepository::repoFile("refs", "tags", name);
     Utilities::writeToFile(referencePath, hash);
 }
 
@@ -196,8 +195,7 @@ void createTag(const std::string& tagName, const GitHash& objectHash,
 
 void listFiles()
 {
-    auto repo = GitRepository::findRoot();
-    auto indexFile = GitRepository::repoFile(repo, "index");
+    auto indexFile = GitRepository::repoFile("index");
 
     auto res = GitIndex::parse(indexFile);
     for (const auto& entry : res) {
@@ -273,26 +271,24 @@ void commit(const std::string& message = "")
 void createBranch(const std::string& branchName)
 {
     auto currentCommit = GitRepository::HEAD();
-    Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
-                                                   "refs", "heads", branchName),
+    Utilities::writeToFile(GitRepository::repoFile("refs", "heads", branchName),
                            currentCommit, true);
 }
 
 void showBranches()
 {
-    auto root = GitRepository::findRoot();
     std::string currentBranch = GitRepository::currentBranch();
     if (currentBranch.empty()) {
         std::cout << fmt::format("* (HEAD detached at {})\n",
                                  GitRepository::HEAD().substr(0, 7));
     }
 
-    auto pathToBranches = GitRepository::repoPath(root, "refs", "heads");
+    auto pathToBranches = GitRepository::repoPath("refs", "heads");
     for (const auto& dirEntry :
          std::filesystem::directory_iterator(pathToBranches)) {
         auto otherBranch = dirEntry.path().filename().string();
-        std::cout << (currentBranch == otherBranch ? "* " : "  ")
-                  << otherBranch << std::endl;
+        std::cout << (currentBranch == otherBranch ? "* " : "  ") << otherBranch
+                  << std::endl;
     }
 }
 }; // namespace GitCommands

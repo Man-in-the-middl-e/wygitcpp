@@ -66,10 +66,13 @@ GitRepository GitRepository::initialize(const Fpath& path)
         Fs::create_directories(repository.m_workTree);
     }
 
-    assert(Fs::exists(repoDir(repository, CreateDir::YES, "branches")));
-    assert(Fs::exists(repoDir(repository, CreateDir::YES, "objects")));
-    assert(Fs::exists(repoDir(repository, CreateDir::YES, "refs", "tags")));
-    assert(Fs::exists(repoDir(repository, CreateDir::YES, "refs", "heads")));
+    Fs::create_directories(repository.m_gitDir);
+    std::filesystem::current_path(repository.m_workTree);
+
+    assert(std::filesystem::create_directories(repoPath("branches")));
+    assert(std::filesystem::create_directories(repoPath("objects")));
+    assert(std::filesystem::create_directories(repoPath("refs", "tags")));
+    assert(std::filesystem::create_directories(repoPath("refs", "heads")));
 
     try {
         std::string initialDescription =
@@ -77,10 +80,10 @@ GitRepository GitRepository::initialize(const Fpath& path)
             "repository.";
         std::string headContent = "ref: refs/heads/master";
 
-        Utilities::writeToFile(repoPath(repository, "description"),
+        Utilities::writeToFile(repoPath("description"),
                                initialDescription, true);
-        Utilities::writeToFile(repoPath(repository, "HEAD"), headContent, true);
-        writeDefaultConfiguration(repoPath(repository, "config"));
+        Utilities::writeToFile(repoPath("HEAD"), headContent, true);
+        writeDefaultConfiguration(repoPath("config"));
     }
     catch (std::runtime_error ex) {
         throw ex;
@@ -96,7 +99,7 @@ GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)
 
 GitRepository::Fpath GitRepository::pathToHead()
 {
-    static Fpath pathToHead = repoPath(findRoot(), "HEAD");
+    static Fpath pathToHead = repoPath("HEAD");
     return pathToHead;
 }
 void GitRepository::commitToBranch(const GitHash& commitHash)
@@ -104,7 +107,7 @@ void GitRepository::commitToBranch(const GitHash& commitHash)
     auto currentHead = HEAD(HeadType::REF);
     if (currentHead.starts_with("ref: ")) {
         auto pathToBranch = currentHead.substr(currentHead.find(' ') + 1);
-        Utilities::writeToFile(repoPath(findRoot(), pathToBranch), commitHash);
+        Utilities::writeToFile(repoPath(pathToBranch), commitHash);
     }
     else {
         std::cout << "This commit doesn't belong to any branch\n";

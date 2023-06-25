@@ -127,8 +127,7 @@ int main(int argc, char* argv[])
             }
         }
         else if (vm.count("ls-tag")) {
-            auto tagsPath = GitRepository::repoFile(GitRepository::findRoot(),
-                                                    "refs", "tags");
+            auto tagsPath = GitRepository::repoFile("refs", "tags");
             if (!tagsPath.empty()) {
                 for (const auto& [_, tags] :
                      GitCommands::showReferences(tagsPath)) {

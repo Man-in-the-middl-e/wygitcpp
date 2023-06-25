@@ -29,22 +29,23 @@ class GitRepository {
 
     static std::string HEAD(HeadType type = HeadType::HASH);
     static std::string currentBranch();
-    
+
     static Fpath pathToHead();
 
   public:
     template <class... T>
-    static Fpath repoPath(const GitRepository& repo, T&&... path)
+    static Fpath repoPath(T&&... path)
     {
-        Fpath repoPath = (repo.gitDir() / ... / path);
+        auto root = GitRepository::findRoot();
+        Fpath repoPath = (root.gitDir() / ... / path);
         return repoPath;
     }
 
     template <class... T>
-    static Fpath repoDir(const GitRepository& repo, CreateDir mkdir,
+    static Fpath repoDir(CreateDir mkdir,
                          T&&... path)
     {
-        auto repositoryDir = repoPath(repo, std::forward<T>(path)...);
+        auto repositoryDir = repoPath(std::forward<T>(path)...);
         if (Fs::exists(repositoryDir)) {
             if (Fs::is_directory(repositoryDir)) {
                 return repositoryDir;
@@ -63,28 +64,28 @@ class GitRepository {
     }
 
     template <class... T>
-    static Fpath repoDir(const GitRepository& repo, T&&... path)
+    static Fpath repoDir(T&&... path)
     {
-        return repoDir(repo, CreateDir::NO, std::forward<T>(path)...);
+        return repoDir(CreateDir::NO, std::forward<T>(path)...);
     }
 
     template <class... T>
-    static Fpath repoFile(const GitRepository& repo, CreateDir mkdir,
+    static Fpath repoFile(CreateDir mkdir,
                           T&&... path)
     {
         // TODO: make it less complex
         auto filePath = (Fpath("") / ... / path);
         auto parentFilePath = filePath.parent_path();
-        if (auto dir = repoDir(repo, mkdir, parentFilePath); !dir.empty()) {
-            return repoPath(repo, filePath);
+        if (auto dir = repoDir(mkdir, parentFilePath); !dir.empty()) {
+            return repoPath(filePath);
         }
         return {};
     }
 
     template <class... T>
-    static Fpath repoFile(const GitRepository& repo, T&&... path)
+    static Fpath repoFile(T&&... path)
     {
-        return repoFile(repo, CreateDir::NO, std::forward<T>(path)...);
+        return repoFile(CreateDir::NO, std::forward<T>(path)...);
     }
 
     const Fpath& gitDir() const;
