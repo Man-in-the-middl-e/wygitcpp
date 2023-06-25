@@ -262,7 +262,8 @@ void commit(const std::string& message = "")
     auto commitHash = GitObject::write(&commitObject);
     GitRepository::commitToBranch(commitHash);
 
-    if (auto head = GitRepository::HEAD(); head.find("refs/") != std::string::npos) {
+    if (auto head = GitRepository::HEAD();
+        head.find("refs/") != std::string::npos) {
         std::cout << fmt::format("  [{} {}] committing\n",
                                  head.substr(head.find_last_of("/") + 1),
                                  commitHash.data().substr(0, 7));
@@ -275,5 +276,23 @@ void createBranch(const std::string& branchName)
     Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
                                                    "refs", "heads", branchName),
                            currentCommit);
+}
+
+void showBranches()
+{
+    auto root = GitRepository::findRoot();
+    std::string currentBranch = GitRepository::currentBranch();
+    if (currentBranch.empty()) {
+        std::cout << fmt::format("* (HEAD detached at {})\n",
+                                 GitRepository::HEAD().substr(0, 7));
+    }
+
+    auto pathToBranches = GitRepository::repoPath(root, "refs", "heads");
+    for (const auto& dirEntry :
+         std::filesystem::directory_iterator(pathToBranches)) {
+        auto otherBranch = dirEntry.path().filename().string();
+        std::cout << (currentBranch == otherBranch ? "* " : "  ")
+                  << otherBranch << std::endl;
+    }
 }
 }; // namespace GitCommands

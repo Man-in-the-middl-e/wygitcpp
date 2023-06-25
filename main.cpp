@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
             "Create commit"
         )
         ("branch",
-            po::value<std::string>(),
+            po::value<std::string>()->implicit_value(""),
             "Create branch"
         );
         ;
@@ -163,9 +163,15 @@ int main(int argc, char* argv[])
         }
         else if (vm.count("commit")) {
             GitCommands::commit("Auto generated commit message");
-        } else if (vm.count("branch")) {
+        }
+        else if (vm.count("branch")) {
             auto branchName = vm["branch"].as<std::string>();
-            GitCommands::createBranch(branchName);
+            if (branchName.empty()) {
+                GitCommands::showBranches();
+            }
+            else {
+                GitCommands::createBranch(branchName);
+            }
         }
     }
     catch (std::runtime_error myex) {

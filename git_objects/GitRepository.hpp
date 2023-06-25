@@ -28,6 +28,8 @@ class GitRepository {
     static void commitToBranch(const GitHash& commitHash);
 
     static std::string HEAD(HeadType type = HeadType::HASH);
+    static std::string currentBranch();
+    
     static Fpath pathToHead();
 
   public:
