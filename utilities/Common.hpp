@@ -14,7 +14,7 @@ namespace Utilities {
 
 std::string readFile(const std::filesystem::path& filePath);
 void writeToFile(const std::filesystem::path& filePath,
-                 const std::string& data);
+                 const std::string& data, bool newLine = false);
 void writeToFile(const std::filesystem::path& filePath,
                  const GitHash& hash);
 

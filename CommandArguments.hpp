@@ -275,7 +275,7 @@ void createBranch(const std::string& branchName)
     auto currentCommit = GitRepository::HEAD();
     Utilities::writeToFile(GitRepository::repoPath(GitRepository::findRoot(),
                                                    "refs", "heads", branchName),
-                           currentCommit);
+                           currentCommit, true);
 }
 
 void showBranches()

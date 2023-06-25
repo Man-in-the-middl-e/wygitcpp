@@ -20,16 +20,19 @@ std::string readFile(const std::filesystem::path& filePath)
     return strData;
 }
 
-void writeToFile(const std::filesystem::path& filePath, const std::string& data)
+void writeToFile(const std::filesystem::path& filePath, const std::string& data,
+                 bool newLine)
 {
     std::ofstream ofs(filePath.string(), std::ios::out | std::ios::binary);
     ofs.write(data.c_str(), data.size());
-    ofs.put('\n');
+    if (newLine) {
+        ofs.put('\n');
+    }
 }
 
 void writeToFile(const std::filesystem::path& filePath, const GitHash& hash)
 {
-    writeToFile(filePath, hash.data());
+    writeToFile(filePath, hash.data(), true);
 }
 
 std::string convertTimeSinceEpoch(const std::string& timeSinceEpoch)

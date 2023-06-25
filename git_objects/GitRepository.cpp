@@ -74,12 +74,12 @@ GitRepository GitRepository::initialize(const Fpath& path)
     try {
         std::string initialDescription =
             "Unnamed repository; edit this file 'description' to name the "
-            "repository.\n";
-        std::string headContent = "ref: refs/heads/master\n";
+            "repository.";
+        std::string headContent = "ref: refs/heads/master";
 
         Utilities::writeToFile(repoPath(repository, "description"),
-                               initialDescription);
-        Utilities::writeToFile(repoPath(repository, "HEAD"), headContent);
+                               initialDescription, true);
+        Utilities::writeToFile(repoPath(repository, "HEAD"), headContent, true);
         writeDefaultConfiguration(repoPath(repository, "config"));
     }
     catch (std::runtime_error ex) {
@@ -116,7 +116,7 @@ void GitRepository::setHEAD(const std::string& value)
 {
 
     Utilities::writeToFile(GitRepository::pathToHead(),
-                           fmt::format("ref: refs/heads/{}\n", value));
+                           fmt::format("ref: refs/heads/{}", value), true);
 }
 
 void GitRepository::setHEAD(const GitHash& hash)
