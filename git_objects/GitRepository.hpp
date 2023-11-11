@@ -19,8 +19,7 @@ class GitRepository {
     using Fpath = std::filesystem::path;
 
   public:
-    static GitRepository initialize(const Fpath& path);
-    static GitRepository create(const Fpath& path);
+    static GitRepository create(const Fpath& path, bool initializeRepository = true);
     static GitRepository findRoot(const Fpath& path = ".");
 
     static void setHEAD(const std::string& value);
@@ -93,6 +92,9 @@ class GitRepository {
 
   private:
     GitRepository(const Fpath& workTree, const Fpath& gitDir);
+    
+  private:
+    static void initialize(const GitRepository& repository);
 
   private:
     Fpath m_workTree;

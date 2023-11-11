@@ -2,7 +2,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <gtest/gtest.h>
 
-#include "../CommandArguments.hpp"
+#include "../GitCommands.hpp"
 
 std::filesystem::path REPO_PATH = std::filesystem::current_path() / "gitTest";
 
@@ -30,6 +30,8 @@ TEST_F(GitCommandsTest, GitInit)
     boost::property_tree::ptree config;
     boost::property_tree::read_ini(pathToConfig, config);
     ASSERT_EQ(config.get<int>("core.repositoryformatversion"), 0);
+    EXPECT_FALSE(config.get<bool>("core.filemode"));
+    EXPECT_FALSE(config.get<bool>("core.bare"));
 }
 
 TEST_F(GitCommandsTest, CreateTree)
@@ -165,7 +167,7 @@ TEST_F(GitCommandsTest, GitCreateBranch)
     Utilities::writeToFile("file1.txt", "test branch content");
     GitCommands::commit("committing to the branch");
     GitCommands::checkout("master");
-    
+
     auto fileOneContent = Utilities::readFile(fileOne);
     ASSERT_EQ(fileOneContent, firstCommitFileOneContent);
 }

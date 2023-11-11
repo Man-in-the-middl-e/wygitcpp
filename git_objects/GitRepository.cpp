@@ -1,11 +1,9 @@
-
 #include "GitRepository.hpp"
+#include "GitObject.hpp"
 
 #include <assert.h>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
-#include "GitObject.hpp"
 #include <iostream>
 
 namespace Git {
@@ -31,7 +29,7 @@ GitRepository GitRepository::findRoot(const GitRepository::Fpath& path)
 {
     auto currentDir = Fs::canonical(path);
     if (auto gitDir = currentDir / ".git"; Fs::exists(gitDir)) {
-        static GitRepository repo = GitRepository::create(path);
+        static GitRepository repo = GitRepository::create(path, false);
         return repo;
     }
 
@@ -43,15 +41,18 @@ GitRepository GitRepository::findRoot(const GitRepository::Fpath& path)
     return findRoot(parentDir);
 }
 
-GitRepository GitRepository::create(const Fpath& path)
+GitRepository GitRepository::create(const Fpath& path,
+                                    bool initializeRepository)
 {
-    return GitRepository(path, path / ".git");
+    auto repository = GitRepository(path, path / ".git");
+    if (initializeRepository) {
+        initialize(repository);
+    }
+    return repository;
 }
 
-GitRepository GitRepository::initialize(const Fpath& path)
+void GitRepository::initialize(const GitRepository& repository)
 {
-    auto repository = create(path);
-
     if (Fs::exists(repository.m_workTree)) {
         if (!Fs::is_directory(repository.m_workTree)) {
             GENERATE_EXCEPTION("Not a directory: {}",
@@ -67,29 +68,21 @@ GitRepository GitRepository::initialize(const Fpath& path)
     }
 
     Fs::create_directories(repository.m_gitDir);
-    std::filesystem::current_path(repository.m_workTree);
+    Fs::current_path(repository.m_workTree);
 
-    assert(std::filesystem::create_directories(repoPath("branches")));
-    assert(std::filesystem::create_directories(repoPath("objects")));
-    assert(std::filesystem::create_directories(repoPath("refs", "tags")));
-    assert(std::filesystem::create_directories(repoPath("refs", "heads")));
+    assert(Fs::create_directories(repoPath("branches")));
+    assert(Fs::create_directories(repoPath("objects")));
+    assert(Fs::create_directories(repoPath("refs", "tags")));
+    assert(Fs::create_directories(repoPath("refs", "heads")));
 
-    try {
-        std::string initialDescription =
-            "Unnamed repository; edit this file 'description' to name the "
-            "repository.";
-        std::string headContent = "ref: refs/heads/master";
+    std::string initialDescription =
+        "Unnamed repository; edit this file 'description' to name the "
+        "repository.";
+    std::string headContent = "ref: refs/heads/master";
 
-        Utilities::writeToFile(repoPath("description"),
-                               initialDescription, true);
-        Utilities::writeToFile(repoPath("HEAD"), headContent, true);
-        writeDefaultConfiguration(repoPath("config"));
-    }
-    catch (std::runtime_error ex) {
-        throw ex;
-    }
-
-    return repository;
+    Utilities::writeToFile(repoPath("description"), initialDescription, true);
+    Utilities::writeToFile(repoPath("HEAD"), headContent, true);
+    writeDefaultConfiguration(repoPath("config"));
 }
 
 GitRepository::GitRepository(const Fpath& workTree, const Fpath& gitDir)

@@ -6,7 +6,8 @@
 namespace GitCommands {
 void init(const std::string& pathToGitRepository)
 {
-    auto repository = GitRepository::initialize(pathToGitRepository);
+    GitRepository::create(pathToGitRepository);
+    std::cout << fmt::format("Initialize empty git repository in {}\n", pathToGitRepository);
 }
 
 void catFile(const std::string& objectFormat,
