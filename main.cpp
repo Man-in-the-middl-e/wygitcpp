@@ -94,6 +94,12 @@ int main(int argc, char* argv[])
     commitCommand.add_argument("-m")
                  .help("Message to associate with this commit")
                  .metavar("message");
+    
+    argparse::ArgumentParser branchCommand("branch");
+    branchCommand.add_description("List, create branches");
+    branchCommand.add_argument("name")
+                 .help("Provide the name of a branch")
+                 .nargs(argparse::nargs_pattern::optional);
 
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
@@ -105,6 +111,7 @@ int main(int argc, char* argv[])
     program.add_subparser(revParseCommand);
     program.add_subparser(lsFilesCommand);
     program.add_subparser(commitCommand);
+    program.add_subparser(branchCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -206,6 +213,16 @@ int main(int argc, char* argv[])
                     ? commitSubParser.get<std::string>("-m")
                     : "Auto generated commit message";
             GitCommands::commit(commitMessage);
+        }
+        else if (program.is_subcommand_used("branch")) {
+            auto& branchSubParser =
+                program.at<argparse::ArgumentParser>("branch");
+            if (branchSubParser.present("name")) {
+                GitCommands::createBranch(
+                    branchSubParser.get<std::string>("name"));
+            } else {
+                GitCommands::showBranches();
+            }
         }
         else {
             GENERATE_EXCEPTION("{}", program.help().str());
