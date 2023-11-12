@@ -25,6 +25,7 @@ class GitHash {
 
     // First two bytes of GitHash are used as directory name for GitObject
     // the rest as file name
+    // TODO: this should not be the part of the GitHash Object
     std::string directoryName() const;
     std::string fileName() const;
 

@@ -6,7 +6,9 @@
 namespace GitCommands {
 void init(const std::string& pathToGitRepository)
 {
-    auto repository = GitRepository::initialize(pathToGitRepository);
+    GitRepository::create(pathToGitRepository);
+    std::cout << fmt::format("Initialize empty git repository in {}\n",
+                             pathToGitRepository);
 }
 
 void catFile(const std::string& objectFormat,
@@ -17,8 +19,8 @@ void catFile(const std::string& objectFormat,
     std::cout << object->serialize().data();
 }
 
-GitHash hashFile(const std::filesystem::path& path, const std::string& format,
-                 bool write = true)
+GitHash hashObject(const std::filesystem::path& path, const std::string& format,
+                   bool write = true)
 {
     auto fileContent = Utilities::readFile(path);
     auto gitObject = GitObjectFactory::create(format, fileContent);
@@ -63,6 +65,7 @@ void listTree(const GitHash& objectHash, const std::string& parentDir,
               bool recursive)
 {
     auto gitObject = GitObjectFactory::read(objectHash);
+    // TODO: don't assume that caller will pass right object hash
     auto tree = static_cast<GitTree*>(gitObject.get());
 
     for (const auto& treeLeaf : tree->tree()) {
@@ -152,7 +155,7 @@ void checkout(const std::string& branchOrCommit)
 }
 
 std::unordered_map<std::string, std::vector<std::filesystem::path>>
-showReferences(const std::filesystem::path& refDir)
+getAll(const std::filesystem::path& refDir)
 {
     std::unordered_map<std::string, std::vector<std::filesystem::path>> refs;
     for (auto const& dir_entry :
@@ -211,7 +214,7 @@ GitHash createTree(const std::filesystem::path& dirPath)
         if (dirEntry.is_regular_file()) {
             leaves.push_back({.fileMode = GitTree::fileMode(dirEntry, "blob"),
                               .filePath = dirEntryPath.filename(),
-                              .hash = hashFile(dirEntry.path(), "blob")});
+                              .hash = hashObject(dirEntry.path(), "blob")});
         }
         else if (dirEntry.is_directory() && !dirPath.empty() &&
                  !dirEntryPath.string().ends_with(".git")) {
