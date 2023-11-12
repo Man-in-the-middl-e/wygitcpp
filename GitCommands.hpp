@@ -155,7 +155,7 @@ void checkout(const std::string& branchOrCommit)
 }
 
 std::unordered_map<std::string, std::vector<std::filesystem::path>>
-showReferences(const std::filesystem::path& refDir)
+getAll(const std::filesystem::path& refDir)
 {
     std::unordered_map<std::string, std::vector<std::filesystem::path>> refs;
     for (auto const& dir_entry :

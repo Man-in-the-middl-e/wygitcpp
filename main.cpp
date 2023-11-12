@@ -65,12 +65,16 @@ int main(int argc, char* argv[])
     lsTreeCommand.add_argument("-r")
                  .help("Recurse into sub-trees")
                  .flag();
+    
+    argparse::ArgumentParser showRefCommand("show-ref");
+    showRefCommand.add_description("List references.");
 
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
     program.add_subparser(logCommand);
     program.add_subparser(lsTreeCommand);
+    program.add_subparser(showRefCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -116,10 +120,20 @@ int main(int argc, char* argv[])
             GitCommands::displayLog(object);
         }
         else if (program.is_subcommand_used("ls-tree")) {
-            auto& lsTreeSubParser = program.at<argparse::ArgumentParser>("ls-tree");
-            auto objectHash = GitObject::findObject(lsTreeSubParser.get<std::string>("tree"), "tree");
+            auto& lsTreeSubParser =
+                program.at<argparse::ArgumentParser>("ls-tree");
+            auto objectHash = GitObject::findObject(
+                lsTreeSubParser.get<std::string>("tree"), "tree");
             auto recursive = lsTreeSubParser.get<bool>("-r");
             GitCommands::listTree(objectHash, "", recursive);
+        }
+        else if (program.is_subcommand_used("show-ref")) {
+            auto references = GitRepository::repoDir("refs");
+            for (const auto& [hash, refs] : GitCommands::getAll(references)) {
+                for (const auto& ref : refs) {
+                    std::cout << hash << ' ' << ref.string() << std::endl;
+                }
+            }
         }
         else {
             std::cout << program.help().str() << std::endl;
