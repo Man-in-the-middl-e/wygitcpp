@@ -10,3 +10,5 @@ Also, this tutorial doesn't contain implementation of major git features, so the
 - [ ] Implement merge.
 - [ ] Implement diff.
 - [x] Implement branches.
+- [ ] Fix all TODOs
+- [ ] Add .pack support
