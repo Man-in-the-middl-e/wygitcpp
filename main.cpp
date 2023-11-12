@@ -57,10 +57,20 @@ int main(int argc, char* argv[])
                .metavar("commit")
                .default_value("HEAD");
 
+    argparse::ArgumentParser lsTreeCommand("ls-tree");
+    lsTreeCommand.add_description("Pretty-print a tree object");
+    lsTreeCommand.add_argument("tree")
+                 .help("A tree-ish object")
+                 .metavar("tree");
+    lsTreeCommand.add_argument("-r")
+                 .help("Recurse into sub-trees")
+                 .flag();
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
     program.add_subparser(logCommand);
+    program.add_subparser(lsTreeCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -104,6 +114,12 @@ int main(int argc, char* argv[])
                     "commit");
             auto object = GitObject::findObject(commit);
             GitCommands::displayLog(object);
+        }
+        else if (program.is_subcommand_used("ls-tree")) {
+            auto& lsTreeSubParser = program.at<argparse::ArgumentParser>("ls-tree");
+            auto objectHash = GitObject::findObject(lsTreeSubParser.get<std::string>("tree"), "tree");
+            auto recursive = lsTreeSubParser.get<bool>("-r");
+            GitCommands::listTree(objectHash, "", recursive);
         }
         else {
             std::cout << program.help().str() << std::endl;

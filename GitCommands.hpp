@@ -65,6 +65,7 @@ void listTree(const GitHash& objectHash, const std::string& parentDir,
               bool recursive)
 {
     auto gitObject = GitObjectFactory::read(objectHash);
+    // TODO: don't assume that caller will pass right object hash
     auto tree = static_cast<GitTree*>(gitObject.get());
 
     for (const auto& treeLeaf : tree->tree()) {
