@@ -4,6 +4,18 @@
 
 #include "GitCommands.hpp"
 
+// TODO: remove when this bug is fixed and use .choices() instead
+// https://github.com/p-ranav/argparse/issues/307
+std::string verifyType(const std::string& type)
+{
+    if (type != "commit" && type != "blob" && type != "tree" && type != "tag") {
+        GENERATE_EXCEPTION("Wrong type: {}, available types: "
+                           "[commit, blob, tree, tag]",
+                           type);
+    }
+    return type;
+}
+
 int main(int argc, char* argv[])
 {
     argparse::ArgumentParser program("wygit");
@@ -16,8 +28,18 @@ int main(int argc, char* argv[])
                .metavar("directory")
                .nargs(argparse::nargs_pattern::optional)
                .default_value(".");
+    
+    argparse::ArgumentParser catFileCommand("cat-file");
+    catFileCommand.add_description("Provide content of repository objects");
+    catFileCommand.add_argument("type")
+                  .help("Specify the type.")
+                  .metavar("type");
+    catFileCommand.add_argument("object")
+                  .help("The object to display")
+                  .metavar("object");
 
     program.add_subparser(initCommand);
+    program.add_subparser(catFileCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -26,13 +48,25 @@ int main(int argc, char* argv[])
         std::cerr << myEx.what() << std::endl << program;
         std::exit(EXIT_FAILURE);
     }
+    // clang-format on
 
     try {
         if (program.is_subcommand_used("init")) {
-            std::string pathToRepository = program.at<argparse::ArgumentParser>("init")
-                                                  .get<std::string>("path");
+            std::string pathToRepository =
+                program.at<argparse::ArgumentParser>("init").get<std::string>(
+                    "path");
             GitCommands::init(pathToRepository);
-        } else {    
+        }
+        else if (program.is_subcommand_used("cat-file")) {
+            auto& catFileSubParser =
+                program.at<argparse::ArgumentParser>("cat-file");
+            auto objectFormat =
+                verifyType(catFileSubParser.get<std::string>("type"));
+
+            auto objectToDisplay = catFileSubParser.get<std::string>("object");
+            GitCommands::catFile(objectFormat, objectToDisplay);
+        }
+        else {
             std::cout << program.help().str() << std::endl;
             std::exit(EXIT_FAILURE);
         }
@@ -41,7 +75,7 @@ int main(int argc, char* argv[])
         std::cerr << myEx.what() << std::endl;
         std::exit(EXIT_FAILURE);
     }
-    // clang-format on
+
     return EXIT_SUCCESS;
 
     // po::options_description desc("Allowed options");
