@@ -81,6 +81,11 @@ int main(int argc, char* argv[])
               .help("Whether to create a tag object")
               .flag();
 
+    argparse::ArgumentParser revParseCommand("rev-parse");
+    revParseCommand.add_description("Parse revision (or other objects) identifiers");
+    revParseCommand.add_argument("name")
+                   .help("The name to parse");
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
@@ -88,6 +93,7 @@ int main(int argc, char* argv[])
     program.add_subparser(lsTreeCommand);
     program.add_subparser(showRefCommand);
     program.add_subparser(tagCommand);
+    program.add_subparser(revParseCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -164,11 +170,18 @@ int main(int argc, char* argv[])
             }
             else if (tagHasName) {
                 auto tagName = tagSubparser.get<std::string>("name");
-                auto objectHash = GitObject::findObject(tagSubparser.get<std::string>("object"));
+                auto objectHash = GitObject::findObject(
+                    tagSubparser.get<std::string>("object"));
                 GitCommands::createTag(tagName, objectHash, isAssociative);
-            } else {
+            }
+            else {
                 GENERATE_EXCEPTION("{}", tagSubparser.usage());
             }
+        }
+        else if (program.is_subcommand_used("rev-parse")) {
+            auto& revSubParser = program.at<argparse::ArgumentParser>("rev-parse");
+            auto objectName = revSubParser.get<std::string>("name");
+            std::cout << GitObject::findObject(objectName, "") << std::endl;
         }
         else {
             GENERATE_EXCEPTION("{}", program.help().str());
