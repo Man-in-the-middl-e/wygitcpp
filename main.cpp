@@ -32,14 +32,28 @@ int main(int argc, char* argv[])
     argparse::ArgumentParser catFileCommand("cat-file");
     catFileCommand.add_description("Provide content of repository objects");
     catFileCommand.add_argument("type")
-                  .help("Specify the type.")
+                  .help("Specify the type")
                   .metavar("type");
     catFileCommand.add_argument("object")
                   .help("The object to display")
                   .metavar("object");
 
+    argparse::ArgumentParser hashObjectCommand("hash-object");
+    hashObjectCommand.add_description("Compute object ID and optionally creates a blob from a file");
+    hashObjectCommand.add_argument("path")
+                     .help("Read object from file")
+                     .metavar("path");
+    hashObjectCommand.add_argument("-t")
+                     .help("Specify the type")
+                     .metavar("type")
+                     .default_value("blob");
+    hashObjectCommand.add_argument("-w")
+                     .help("Actually write the object into the database")
+                     .flag();
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
+    program.add_subparser(hashObjectCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -65,6 +79,15 @@ int main(int argc, char* argv[])
 
             auto objectToDisplay = catFileSubParser.get<std::string>("object");
             GitCommands::catFile(objectFormat, objectToDisplay);
+        }
+        else if (program.is_subcommand_used("hash-object")) {
+            auto& hashObjectSubParser =
+                program.at<argparse::ArgumentParser>("hash-object");
+            auto pathToFile = hashObjectSubParser.get<std::string>("path");
+            auto objectType =
+                verifyType(hashObjectSubParser.get<std::string>("-t"));
+            auto writeToFile = hashObjectSubParser.get<bool>("-w");
+            std::cout << GitCommands::hashObject(pathToFile, objectType, writeToFile) << std::endl;
         }
         else {
             std::cout << program.help().str() << std::endl;

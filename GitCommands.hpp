@@ -7,7 +7,8 @@ namespace GitCommands {
 void init(const std::string& pathToGitRepository)
 {
     GitRepository::create(pathToGitRepository);
-    std::cout << fmt::format("Initialize empty git repository in {}\n", pathToGitRepository);
+    std::cout << fmt::format("Initialize empty git repository in {}\n",
+                             pathToGitRepository);
 }
 
 void catFile(const std::string& objectFormat,
@@ -18,8 +19,8 @@ void catFile(const std::string& objectFormat,
     std::cout << object->serialize().data();
 }
 
-GitHash hashFile(const std::filesystem::path& path, const std::string& format,
-                 bool write = true)
+GitHash hashObject(const std::filesystem::path& path, const std::string& format,
+                   bool write = true)
 {
     auto fileContent = Utilities::readFile(path);
     auto gitObject = GitObjectFactory::create(format, fileContent);
@@ -212,7 +213,7 @@ GitHash createTree(const std::filesystem::path& dirPath)
         if (dirEntry.is_regular_file()) {
             leaves.push_back({.fileMode = GitTree::fileMode(dirEntry, "blob"),
                               .filePath = dirEntryPath.filename(),
-                              .hash = hashFile(dirEntry.path(), "blob")});
+                              .hash = hashObject(dirEntry.path(), "blob")});
         }
         else if (dirEntry.is_directory() && !dirPath.empty() &&
                  !dirEntryPath.string().ends_with(".git")) {

@@ -91,7 +91,7 @@ TEST_F(GitCommandsTest, HashFileBlob)
 {
     auto textFile = REPO_PATH / "test.txt";
     Utilities::writeToFile(textFile, "text");
-    auto fileHash = GitCommands::hashFile(textFile, "blob");
+    auto fileHash = GitCommands::hashObject(textFile, "blob");
     auto fileHashFromFS = GitObject::findObject(fileHash.data(), "blob");
     EXPECT_EQ(fileHash, fileHashFromFS);
 }
