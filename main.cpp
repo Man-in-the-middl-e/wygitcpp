@@ -86,6 +86,9 @@ int main(int argc, char* argv[])
     revParseCommand.add_argument("name")
                    .help("The name to parse");
 
+    argparse::ArgumentParser lsFilesCommand("ls-files");
+    lsFilesCommand.add_description("List all the stage files");
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
@@ -94,6 +97,7 @@ int main(int argc, char* argv[])
     program.add_subparser(showRefCommand);
     program.add_subparser(tagCommand);
     program.add_subparser(revParseCommand);
+    program.add_subparser(lsFilesCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -182,6 +186,8 @@ int main(int argc, char* argv[])
             auto& revSubParser = program.at<argparse::ArgumentParser>("rev-parse");
             auto objectName = revSubParser.get<std::string>("name");
             std::cout << GitObject::findObject(objectName, "") << std::endl;
+        } else if (program.is_subcommand_used("ls-files")) {
+            GitCommands::listFiles();
         }
         else {
             GENERATE_EXCEPTION("{}", program.help().str());
