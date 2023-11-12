@@ -67,7 +67,19 @@ int main(int argc, char* argv[])
                  .flag();
     
     argparse::ArgumentParser showRefCommand("show-ref");
-    showRefCommand.add_description("List references.");
+    showRefCommand.add_description("List references");
+
+    argparse::ArgumentParser tagCommand("tag");
+    tagCommand.add_description("List and create tags");
+    tagCommand.add_argument("name")
+              .help("Name of the tag")
+              .nargs(argparse::nargs_pattern::optional);
+    tagCommand.add_argument("object")
+              .help("The object the new tag will point to")
+              .default_value("HEAD");
+    tagCommand.add_argument("-a")
+              .help("Whether to create a tag object")
+              .flag();
 
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
@@ -75,6 +87,7 @@ int main(int argc, char* argv[])
     program.add_subparser(logCommand);
     program.add_subparser(lsTreeCommand);
     program.add_subparser(showRefCommand);
+    program.add_subparser(tagCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -135,9 +148,30 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        else if (program.is_subcommand_used("tag")) {
+            auto& tagSubparser = program.at<argparse::ArgumentParser>("tag");
+            bool isAssociative = tagSubparser.get<bool>("-a");
+            bool tagHasName = tagSubparser.present("name").has_value();
+            if (!isAssociative && !tagHasName) {
+                auto tags = GitRepository::repoFile("refs", "tags");
+                if (!tags.empty()) {
+                    for (const auto& [_, tags] : GitCommands::getAll(tags)) {
+                        for (const auto& tag : tags) {
+                            std::cout << tag.filename().string() << std::endl;
+                        }
+                    }
+                }
+            }
+            else if (tagHasName) {
+                auto tagName = tagSubparser.get<std::string>("name");
+                auto objectHash = GitObject::findObject(tagSubparser.get<std::string>("object"));
+                GitCommands::createTag(tagName, objectHash, isAssociative);
+            } else {
+                GENERATE_EXCEPTION("{}", tagSubparser.usage());
+            }
+        }
         else {
-            std::cout << program.help().str() << std::endl;
-            std::exit(EXIT_FAILURE);
+            GENERATE_EXCEPTION("{}", program.help().str());
         }
     }
     catch (const std::exception& myEx) {
