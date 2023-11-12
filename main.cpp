@@ -50,10 +50,17 @@ int main(int argc, char* argv[])
     hashObjectCommand.add_argument("-w")
                      .help("Actually write the object into the database")
                      .flag();
+    argparse::ArgumentParser logCommand("log");
+    logCommand.add_description("Display history of a given commit");
+    logCommand.add_argument("commit")
+               .help("Commit to start at")
+               .metavar("commit")
+               .default_value("HEAD");
 
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
+    program.add_subparser(logCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -87,7 +94,16 @@ int main(int argc, char* argv[])
             auto objectType =
                 verifyType(hashObjectSubParser.get<std::string>("-t"));
             auto writeToFile = hashObjectSubParser.get<bool>("-w");
-            std::cout << GitCommands::hashObject(pathToFile, objectType, writeToFile) << std::endl;
+            std::cout << GitCommands::hashObject(pathToFile, objectType,
+                                                 writeToFile)
+                      << std::endl;
+        }
+        else if (program.is_subcommand_used("log")) {
+            auto commit =
+                program.at<argparse::ArgumentParser>("log").get<std::string>(
+                    "commit");
+            auto object = GitObject::findObject(commit);
+            GitCommands::displayLog(object);
         }
         else {
             std::cout << program.help().str() << std::endl;
