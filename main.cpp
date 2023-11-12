@@ -89,6 +89,12 @@ int main(int argc, char* argv[])
     argparse::ArgumentParser lsFilesCommand("ls-files");
     lsFilesCommand.add_description("List all the stage files");
 
+    argparse::ArgumentParser commitCommand("commit");
+    commitCommand.add_description("Record changes to the repository");
+    commitCommand.add_argument("-m")
+                 .help("Message to associate with this commit")
+                 .metavar("message");
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
@@ -98,6 +104,7 @@ int main(int argc, char* argv[])
     program.add_subparser(tagCommand);
     program.add_subparser(revParseCommand);
     program.add_subparser(lsFilesCommand);
+    program.add_subparser(commitCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -183,11 +190,22 @@ int main(int argc, char* argv[])
             }
         }
         else if (program.is_subcommand_used("rev-parse")) {
-            auto& revSubParser = program.at<argparse::ArgumentParser>("rev-parse");
+            auto& revSubParser =
+                program.at<argparse::ArgumentParser>("rev-parse");
             auto objectName = revSubParser.get<std::string>("name");
             std::cout << GitObject::findObject(objectName, "") << std::endl;
-        } else if (program.is_subcommand_used("ls-files")) {
+        }
+        else if (program.is_subcommand_used("ls-files")) {
             GitCommands::listFiles();
+        }
+        else if (program.is_subcommand_used("commit")) {
+            auto& commitSubParser =
+                program.at<argparse::ArgumentParser>("commit");
+            std::string commitMessage =
+                commitSubParser.present("-m")
+                    ? commitSubParser.get<std::string>("-m")
+                    : "Auto generated commit message";
+            GitCommands::commit(commitMessage);
         }
         else {
             GENERATE_EXCEPTION("{}", program.help().str());
