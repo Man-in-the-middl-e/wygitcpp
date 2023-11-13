@@ -102,6 +102,11 @@ int main(int argc, char* argv[])
                  .help("Provide the name of a branch.")
                  .nargs(argparse::nargs_pattern::optional);
 
+    argparse::ArgumentParser checkoutCommand("checkout");
+    checkoutCommand.add_description("Checkout a commit inside of a directory.");
+    checkoutCommand.add_argument("commit")
+                   .help("Commit to checkout to.");
+
     program.add_subparser(initCommand);
     program.add_subparser(catFileCommand);
     program.add_subparser(hashObjectCommand);
@@ -113,6 +118,7 @@ int main(int argc, char* argv[])
     program.add_subparser(lsFilesCommand);
     program.add_subparser(commitCommand);
     program.add_subparser(branchCommand);
+    program.add_subparser(checkoutCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -225,6 +231,12 @@ int main(int argc, char* argv[])
             else {
                 GitCommands::showBranches();
             }
+        }
+        else if (program.is_subcommand_used("checkout")) {
+            auto commitToCheckoutTo =
+                program.at<argparse::ArgumentParser>("checkout")
+                    .get<std::string>("commit");
+            GitCommands::checkout(commitToCheckoutTo);
         }
         else {
             GENERATE_EXCEPTION("{}", program.help().str());
