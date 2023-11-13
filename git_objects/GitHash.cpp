@@ -6,23 +6,30 @@
 #include <sstream>
 
 namespace Git {
-std::string GitHash::encodeStringHash(const GitHash& hash)
+
+BinaryHash::BinaryHash(const std::string& hash) : m_data(hash)
+{
+    assert(hash.size() == BinaryHash::SIZE);
+}
+
+const std::string& BinaryHash::data() const { return m_data; }
+
+BinaryHash GitHash::convertToBinary(const GitHash& hash)
 {
     std::string res;
-    res.reserve(BINARY_HASH_SIZE);
+    res.reserve(BinaryHash::SIZE);
     auto& data = hash.data();
     for (int blobIndex = 0; blobIndex < data.size(); blobIndex += 2) {
         uint8_t blob = std::stoi(data.substr(blobIndex, 2), nullptr, 16);
         res.push_back(blob);
     }
-    return res;
+    return BinaryHash(res);
 }
 
-GitHash GitHash::decodeBinaryHash(const std::string& data)
+GitHash convertFromBinary(const BinaryHash& hash)
 {
-    // TODO: improve binary data representation, replace std::string with
-    // something more descriptive and type safe
-    assert(data.size() == BINARY_HASH_SIZE);
+    auto& data = hash.data();
+    assert(data.size() == BinaryHash::SIZE);
     std::ostringstream oss;
     oss << std::hex;
     for (int blobIndex = 0; blobIndex < data.size(); blobIndex += 1) {
@@ -34,12 +41,13 @@ GitHash GitHash::decodeBinaryHash(const std::string& data)
 
 GitHash::GitHash(const std::string& hash) : m_data(hash)
 {
-    assert(m_data.size() == STRING_HASH_SIZE);
+    assert(m_data.size() == READABLE_HASH_SIZE);
 }
 
-std::string GitHash::directoryName() const { return m_data.substr(0, 2); }
-
-std::string GitHash::fileName() const { return m_data.substr(2); }
+GitHash::GitHash(const BinaryHash& hash)
+    : m_data(convertFromBinary(hash).data())
+{
+}
 
 const std::string& GitHash::data() const { return m_data; }
 std::string& GitHash::data() { return m_data; }

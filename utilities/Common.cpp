@@ -52,4 +52,15 @@ std::string decodeDateIn(const std::string& gitTime)
     auto offset = gitTime.substr(timeSinceEpochEnds + 1);
     return fmt::format("{} {}", convertTimeSinceEpoch(timeSinceEpoch), offset);
 }
+
+std::string getObjectDirectory(const GitHash& objectHash)
+{
+    return objectHash.data().substr(0, 2);
+}
+
+std::string getObjectFileName(const GitHash& objectHash)
+{
+    return objectHash.data().substr(2);
+}
+
 }; // namespace Utilities

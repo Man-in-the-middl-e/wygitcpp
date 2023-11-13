@@ -82,9 +82,10 @@ GitHash GitObject::write(GitObject* gitObject, bool actuallyWrite)
 
     auto fileHash = SHA1::computeHash(fileContent);
     if (actuallyWrite) {
-        auto objectFile = GitRepository::repoFile(
-            GitRepository::CreateDir::YES, "objects", fileHash.directoryName(),
-            fileHash.fileName());
+        auto objectFile =
+            GitRepository::repoFile(GitRepository::CreateDir::YES, "objects",
+                                    Utilities::getObjectDirectory(fileHash),
+                                    Utilities::getObjectFileName(fileHash));
         Zlib::compress(objectFile, fileContent);
     }
     return fileHash;
@@ -269,7 +270,7 @@ ObjectData GitTree::serialize()
         data += ' ';
         data += leaf.filePath;
         data += '\0';
-        data += GitHash::encodeStringHash(leaf.hash);
+        data += GitHash::convertToBinary(leaf.hash).data();
     }
     return ObjectData(data);
 }
@@ -289,10 +290,10 @@ std::vector<GitTreeLeaf> GitTree::parseGitTree(const std::string& data)
         auto pathEnds = data.find('\0', fileModeEnds);
         auto path = data.substr(fileModeEnds + 1, pathEnds - fileModeEnds - 1);
 
-        auto sha = GitHash::decodeBinaryHash(
-            data.substr(pathEnds + 1, GitHash::BINARY_HASH_SIZE));
+        auto sha = GitHash(
+            BinaryHash(data.substr(pathEnds + 1, BinaryHash::SIZE)));
 
-        start = pathEnds + GitHash::BINARY_HASH_SIZE + 1;
+        start = pathEnds + BinaryHash::SIZE + 1;
         tree.push_back({.fileMode = fileMode, .filePath = path, .hash = sha});
     }
     return tree;

@@ -94,8 +94,8 @@ std::vector<IndexEntry> GitIndex::parse(const std::string& indexFilePath)
                            .uid = read4(ifs),
                            .gid = read4(ifs),
                            .fsize = convert<FourBytes>(read4(ifs)),
-                           .hash = GitHash(GitHash::decodeBinaryHash(
-                               readString(ifs, GitHash::BINARY_HASH_SIZE))),
+                           .hash = GitHash(BinaryHash(
+                               readString(ifs, BinaryHash::SIZE))),
                            .flags = read2(ifs),
                            .objectName = readStringUntilZero(ifs)});
             int endOfTheEntry = ifs.tellp();

@@ -25,8 +25,9 @@ GitObjectFactory::create(const std::string& format,
 
 std::unique_ptr<GitObject> GitObjectFactory::read(const GitHash& objectHash)
 {
-    auto path = GitRepository::repoFile("objects", objectHash.directoryName(),
-                                        objectHash.fileName());
+    auto path = GitRepository::repoFile(
+        "objects", Utilities::getObjectDirectory(objectHash),
+        Utilities::getObjectFileName(objectHash));
 
     auto objectContent = Zlib::decompressFile(path);
     /*

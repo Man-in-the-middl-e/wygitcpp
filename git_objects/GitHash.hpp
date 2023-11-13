@@ -5,35 +5,35 @@
 
 namespace Git {
 
-class GitHash {
-  private:
-    static constexpr uint8_t STRING_HASH_SIZE = 40;
+class BinaryHash {
+  public:
+    static constexpr uint8_t SIZE = 20;
 
   public:
-    static constexpr uint8_t BINARY_HASH_SIZE = 20;
+    explicit BinaryHash(const std::string& data);
+    const std::string& data() const;
 
+  private:
+    std::string m_data;
+};
+
+class GitHash {
   public:
     explicit GitHash(const std::string& hash);
-
-    // Converts 20 bytes binary SHA1 hash to 40 byte readable string
-    // representation
-    static GitHash decodeBinaryHash(const std::string& data);
+    explicit GitHash(const BinaryHash& hash);
 
     // Converts 40 bytes string representation of SHA1 hash to 20 bytes binary
     // representation
-    static std::string encodeStringHash(const GitHash& hash);
-
-    // First two bytes of GitHash are used as directory name for GitObject
-    // the rest as file name
-    // TODO: this should not be the part of the GitHash Object
-    std::string directoryName() const;
-    std::string fileName() const;
+    static BinaryHash convertToBinary(const GitHash& hash);
 
     const std::string& data() const;
     std::string& data();
 
   private:
     std::string m_data;
+
+  private:
+    static constexpr uint8_t READABLE_HASH_SIZE = 40;
 };
 
 std::ostream& operator<<(std::ostream& stream, GitHash hash);
